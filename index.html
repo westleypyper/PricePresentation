@@ -1055,9 +1055,16 @@ function computeOffer(offer) {
 /* Costco Shop Card: a member incentive, not a discount, so it never
    touches `running` above. It is 10% of labor and materials pre-tax,
    figured last, against whatever total an offer already landed on after
-   every other discount. Michigan taxes the materials share of a home
-   improvement contract but not the labor share, so the materials share is
-   grossed back up by the tax rate before the tax is subtracted out. */
+   every other discount.
+
+   The materials/labor split is a share of that final, tax-included total,
+   not of the pre-tax subtotal: labor is 20% of the total, untaxed, and
+   materials is the other 80% of the total, WITH its own tax already baked
+   in (this matches Costco's own materials invoice, which is separate from
+   Bathworks' labor charge). Only the materials share was ever taxed, at
+   6%, so it is knocked back down by the tax rate to get its pre-tax
+   value before the two shares are added back together. Verified to the
+   penny against three real contracts. */
 function costcoShopCard(total) {
   var cfg = CONFIG.costco;
   if (!cfg || !cfg.enabled || total <= 0) return 0;
@@ -1065,8 +1072,7 @@ function costcoShopCard(total) {
   var laborShare = 1 - materialsShare;
   var taxRate = Number(cfg.taxRatePercent || 0) / 100;
   var cardRate = Number(cfg.shopCardPercent || 0) / 100;
-  var denom = laborShare + materialsShare / (1 - taxRate);
-  var pretaxSubtotal = total / denom;
+  var pretaxSubtotal = total * (laborShare + materialsShare * (1 - taxRate));
   return pretaxSubtotal * cardRate;
 }
 
@@ -2477,8 +2483,9 @@ function paneCostco(pane) {
 
   card.appendChild(el("div", "hint",
     "Costco math runs last, after every other discount, against whichever total an offer already landed on. " +
-    "Michigan taxes the materials share of the price but not labor, so the calculator backs 6% tax out of the " +
-    "materials share, then takes the shop card percentage of the pre-tax result. " +
+    "Labor is the labor share of that total, untaxed; materials is the rest of the total, with its own tax " +
+    "already included. Michigan taxes materials but not labor, so the calculator knocks the tax back out of " +
+    "the materials share before taking the shop card percentage of the two shares combined. " +
     "Turn an offer on or off for this in the Offers tab, under “Costco Shop Card eligible.” " +
     "The rep switches it on per customer from the Pricing panel during the sit."));
   pane.appendChild(card);
