@@ -210,6 +210,11 @@ input,select{font-family:inherit;font-size:16px;color:var(--navy-800)}
 .total .v{font-size:38px;font-weight:700;letter-spacing:-.025em;line-height:1.05;color:var(--navy-800);white-space:nowrap}
 .save{font-size:16px;font-weight:700;color:var(--credit);margin-top:6px}
 
+.costco{margin-top:14px;padding:14px 16px;border:1px solid var(--border-strong);border-radius:var(--radius-md);background:var(--mist)}
+.costco .k{font-size:14px;font-weight:600;color:var(--slate-600)}
+.costco .v{font-size:24px;font-weight:700;color:var(--navy-800);letter-spacing:-.01em;margin-top:2px}
+.costco .note{font-size:12px;font-weight:500;color:var(--slate-600);margin-top:6px;line-height:1.4}
+
 .offer .foot{margin-top:auto;display:flex;flex-direction:column;gap:11px}
 .btn-fin{
   width:100%;background:var(--btn);color:#fff;font-weight:700;font-size:17px;
@@ -464,6 +469,15 @@ table.fin td.pay{font-weight:700;font-size:19px;white-space:nowrap}
   "limits": {
     "maxTotalDiscountEnabled": false,
     "maxTotalDiscountPercent": 10
+  },
+  "costco": {
+    "enabled": true,
+    "toggleLabel": "Costco Member",
+    "lineLabel": "Costco Shop Card",
+    "noteText": "Digital Costco Shop Card(s) will be processed and emailed within 7 business days of Costco's receipt of your signature on the project Delivery Verification form.",
+    "shopCardPercent": 10,
+    "materialsPercent": 80,
+    "taxRatePercent": 6
   },
   "session": {
     "rememberDuringSit": true,
@@ -748,6 +762,7 @@ table.fin td.pay{font-weight:700;font-size:19px;white-space:nowrap}
       "showByDefault": false,
       "repToggleable": true,
       "showYouSave": true,
+      "costcoEligible": true,
       "focusable": false,
       "discounts": [
         "d-military",
@@ -774,6 +789,7 @@ table.fin td.pay{font-weight:700;font-size:19px;white-space:nowrap}
       "showByDefault": false,
       "repToggleable": true,
       "showYouSave": true,
+      "costcoEligible": true,
       "focusable": true,
       "focusLabel": "SRP only",
       "discounts": [
@@ -840,7 +856,7 @@ function uid(p) { return p + "-" + Math.floor(Math.random() * 1e9).toString(36);
    ============================================================ */
 var S = {};
 function resetSession() {
-  S = { inputs: {}, deposit: 0, toggles: {}, marketing: 0, shown: {}, plan: {}, focus: null };
+  S = { inputs: {}, deposit: 0, toggles: {}, marketing: 0, shown: {}, plan: {}, focus: null, costco: false };
   CONFIG.priceInputs.forEach(function (pi) { S.inputs[pi.id] = 0; });
   CONFIG.discounts.forEach(function (d) { S.toggles[d.id] = !!d.defaultOn; });
   CONFIG.discounts.forEach(function (d) { if (d.repAdjustable) S.marketing = 0; });
@@ -1034,6 +1050,24 @@ function computeOffer(offer) {
     deposit: deposit,
     financed: Math.max(running - deposit, 0)
   };
+}
+
+/* Costco Shop Card: a member incentive, not a discount, so it never
+   touches `running` above. It is 10% of labor and materials pre-tax,
+   figured last, against whatever total an offer already landed on after
+   every other discount. Michigan taxes the materials share of a home
+   improvement contract but not the labor share, so the materials share is
+   grossed back up by the tax rate before the tax is subtracted out. */
+function costcoShopCard(total) {
+  var cfg = CONFIG.costco;
+  if (!cfg || !cfg.enabled || total <= 0) return 0;
+  var materialsShare = Number(cfg.materialsPercent || 0) / 100;
+  var laborShare = 1 - materialsShare;
+  var taxRate = Number(cfg.taxRatePercent || 0) / 100;
+  var cardRate = Number(cfg.shopCardPercent || 0) / 100;
+  var denom = laborShare + materialsShare / (1 - taxRate);
+  var pretaxSubtotal = total / denom;
+  return pretaxSubtotal * cardRate;
 }
 
 /* `res` is the result of computeOffer. A plan may require its own minimum
@@ -1419,6 +1453,17 @@ function renderOffer(offer) {
   tot.appendChild(el("div", "v", money(r.total)));
   if (offer.showYouSave && r.saved > 0) tot.appendChild(el("div", "save", "You Save " + money(r.saved)));
   bp.appendChild(tot);
+
+  if (offer.costcoEligible && S.costco) {
+    var ccAmount = costcoShopCard(r.total);
+    if (ccAmount > 0) {
+      var cbox = el("div", "costco");
+      cbox.appendChild(el("div", "k", esc((CONFIG.costco && CONFIG.costco.lineLabel) || "Costco Shop Card")));
+      cbox.appendChild(el("div", "v", money(ccAmount)));
+      if (CONFIG.costco && CONFIG.costco.noteText) cbox.appendChild(el("div", "note", esc(CONFIG.costco.noteText)));
+      bp.appendChild(cbox);
+    }
+  }
   /* Payment above the breakdown by default, which is what makes it the
      focal point. Administrator can put it below instead. */
   if ((CONFIG.layout && CONFIG.layout.paymentPosition) === "bottom") {
@@ -1638,6 +1683,21 @@ function renderDrawer() {
     box.appendChild(g1);
   }
 
+  // Costco Shop Card. Not a discount, so it lives outside CONFIG.discounts:
+  // it never changes the price total, only whether the incentive line shows
+  // on the offers marked Costco-eligible below.
+  if (CONFIG.costco && CONFIG.costco.enabled && CONFIG.offers.some(function (o) { return o.costcoEligible; })) {
+    var gC = el("div", "grp");
+    gC.appendChild(el("div", "lbl", "Costco"));
+    gC.appendChild(toggleRow(
+      CONFIG.costco.toggleLabel || "Costco Member",
+      "Adds the Costco Shop Card line to eligible offers",
+      S.costco,
+      function (on) { S.costco = on; renderStage(); }
+    ));
+    box.appendChild(gC);
+  }
+
   // Offer reveal
   var g2 = el("div", "grp");
   g2.appendChild(el("div", "lbl", "Show offers"));
@@ -1842,7 +1902,7 @@ function renderAdmin() {
   box.innerHTML = "";
 
   var tabs = el("div", "tabs");
-  [["general", "General"], ["layout", "Layout"], ["discounts", "Discounts"], ["financing", "Financing"], ["offers", "Offers"]].forEach(function (t) {
+  [["general", "General"], ["layout", "Layout"], ["discounts", "Discounts"], ["financing", "Financing"], ["offers", "Offers"], ["costco", "Costco"]].forEach(function (t) {
     var b = el("button", adminTab === t[0] ? "on" : null, t[1]);
     b.addEventListener("click", function () { adminTab = t[0]; renderAdmin(); });
     tabs.appendChild(b);
@@ -1867,6 +1927,7 @@ function renderAdmin() {
   if (adminTab === "discounts") paneDiscounts(pane);
   if (adminTab === "financing") paneFinancing(pane);
   if (adminTab === "offers") paneOffers(pane);
+  if (adminTab === "costco") paneCostco(pane);
   box.appendChild(pane);
   setStatus("");
 }
@@ -2331,6 +2392,7 @@ function paneOffers(pane) {
     g.appendChild(editRow("Shown at open", o.showByDefault ? "1" : "0", function (v) { o.showByDefault = v === "1"; }, "select", [["1", "Yes"], ["0", "No"]]));
     g.appendChild(editRow("Rep can reveal", o.repToggleable ? "1" : "0", function (v) { o.repToggleable = v === "1"; }, "select", [["1", "Yes"], ["0", "No, always on"]]));
     g.appendChild(editRow("Show “You Save”", o.showYouSave ? "1" : "0", function (v) { o.showYouSave = v === "1"; }, "select", [["1", "Yes"], ["0", "No"]]));
+    g.appendChild(editRow("Costco Shop Card eligible", o.costcoEligible ? "1" : "0", function (v) { o.costcoEligible = v === "1"; }, "select", [["1", "Yes"], ["0", "No"]]));
     g.appendChild(editRow("Show-only button", o.focusable === false ? "0" : "1", function (v) { o.focusable = v === "1"; renderAdmin(); }, "select", [["1", "Yes"], ["0", "No"]]));
     if (o.focusable !== false) g.appendChild(editRow("Show-only button text", o.focusLabel, function (v) { o.focusLabel = v; }));
     g.appendChild(editRow("Headline plan", o.defaultPlan, function (v) { o.defaultPlan = v; }, "select",
@@ -2379,6 +2441,47 @@ function paneOffers(pane) {
     renderAdmin();
   });
   pane.appendChild(add);
+}
+
+/* --- Costco --- */
+function paneCostco(pane) {
+  if (!DRAFT.costco) {
+    DRAFT.costco = {
+      enabled: true, toggleLabel: "Costco Member", lineLabel: "Costco Shop Card",
+      noteText: "", shopCardPercent: 10, materialsPercent: 80, taxRatePercent: 6
+    };
+  }
+  var c = DRAFT.costco;
+  var card = el("div", "editcard");
+  card.appendChild(el("div", "cardhead", "<strong>Costco Shop Card incentive</strong>"));
+  var g = el("div", "egrid");
+  g.appendChild(editRow("Enabled", c.enabled ? "1" : "0", function (v) { c.enabled = v === "1"; }, "select", [["1", "Yes"], ["0", "No"]]));
+  g.appendChild(editRow("Rep toggle label", c.toggleLabel, function (v) { c.toggleLabel = v; }));
+  g.appendChild(editRow("Line label on the price card", c.lineLabel, function (v) { c.lineLabel = v; }));
+  g.appendChild(editRow("Shop card %", c.shopCardPercent, function (v) { c.shopCardPercent = v; }, "number"));
+  g.appendChild(editRow("Materials share of price %", c.materialsPercent, function (v) { c.materialsPercent = v; }, "number"));
+  g.appendChild(editRow("Sales tax rate %", c.taxRatePercent, function (v) { c.taxRatePercent = v; }, "number"));
+  card.appendChild(g);
+
+  var note = el("div");
+  note.style.marginTop = "10px";
+  note.appendChild(el("label", null, "<strong style='font-size:13px'>Fine print under the amount</strong>"));
+  var ni = document.createElement("input");
+  ni.type = "text";
+  ni.value = c.noteText || "";
+  ni.style.cssText = "width:100%;padding:9px 10px;border:1px solid var(--border-strong);border-radius:8px;font-weight:600;font-size:14px;margin-top:5px";
+  ni.addEventListener("input", function () { c.noteText = ni.value; });
+  note.appendChild(ni);
+  note.appendChild(el("div", "hint", "Leave it blank to show no fine print."));
+  card.appendChild(note);
+
+  card.appendChild(el("div", "hint",
+    "Costco math runs last, after every other discount, against whichever total an offer already landed on. " +
+    "Michigan taxes the materials share of the price but not labor, so the calculator backs 6% tax out of the " +
+    "materials share, then takes the shop card percentage of the pre-tax result. " +
+    "Turn an offer on or off for this in the Offers tab, under “Costco Shop Card eligible.” " +
+    "The rep switches it on per customer from the Pricing panel during the sit."));
+  pane.appendChild(card);
 }
 
 function planIn(cfg, id) {
