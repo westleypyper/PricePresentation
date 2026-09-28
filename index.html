@@ -1,0 +1,2563 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Investment Guide</title>
+<style>
+/* ============================================================
+   BathWorks Investment Guide - embedded price presentation
+   Single self-contained file. No network requests. Works offline.
+
+   Built on the BathWorks design system: navy is the brand, slate is
+   the workhorse neutral, periwinkle is decoration only, cool neutrals
+   throughout. No amber, no warm accents.
+
+   Sizing is deliberately larger than the design system's web defaults.
+   This is read across a kitchen table by homeowners who are often
+   older, sometimes without reading glasses in hand.
+   ============================================================ */
+
+:root{
+  /* Brand */
+  --navy-900:#021A40;
+  --navy-800:#032456;
+  --navy-700:#0A3672;
+  --slate-600:#535860;
+  --periwinkle-500:#818BA6;
+  --periwinkle-200:#D6DBE6;
+
+  /* Cool neutrals */
+  --cloud:#F7F9FC;
+  --mist:#EDF1F7;
+  --surface:#FFFFFF;
+  --border:#DDE3EC;
+  --border-strong:#C3CDDC;
+
+  /* Status. Green reads as money saved and is the only non-navy hue. */
+  --green-700:#0F7A45;
+
+  /* Configurable, set from the config block at runtime */
+  --btn:var(--navy-800);
+  --credit:var(--green-700);
+
+  /* Shape */
+  --radius-md:10px;
+  --radius-lg:14px;
+  --radius-pill:999px;
+
+  /* Layout knobs, all editable from Administrator -> Layout */
+  --pk-gap-col:22px;
+  --pk-gap-block:15px;
+  --pk-radius:14px;
+  --pk-pad:22px;
+  --pk-amount:66px;
+  --pk-title:35px;
+  --pk-base:17px;
+  --pk-page-title:15px;
+  --pk-hdr-bg:transparent;
+  --pk-hdr-border:transparent;
+  --pk-hdr-text:var(--navy-800);
+  --pk-heading-font:var(--font-serif);
+  --pk-title-color:#032456;
+  --pk-subtitle-color:#535860;
+
+  /* Navy-tinted shadows, never neutral black */
+  --shadow-sm:0 1px 2px rgba(3,36,86,.07), 0 1px 3px rgba(3,36,86,.06);
+  --shadow-md:0 4px 14px rgba(3,36,86,.11);
+  --shadow-lg:0 14px 36px rgba(3,36,86,.18);
+  --shadow-focus:0 0 0 3px rgba(3,36,86,.45);
+
+  /* Type. Source Serif 4 and Lato are the system's faces; this file
+     loads nothing over the network, so both fall back to what is on
+     the machine. Numbers stay in the sans on purpose: Georgia, the
+     likely serif fallback, sets old-style figures that dip below the
+     baseline and make prices harder to scan. */
+  --font-serif:"Source Serif 4","Source Serif Pro",Georgia,"Times New Roman",serif;
+  --font-sans:"Lato","Segoe UI",system-ui,-apple-system,"Helvetica Neue",sans-serif;
+
+  /* Motion: calm and quick, no overshoot */
+  --dur-fast:130ms;
+  --dur-base:200ms;
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--font-sans);
+  color:var(--navy-800);
+  background:transparent;
+  -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+}
+body.bg-cloud{background:var(--cloud)}
+body.bg-mist{background:var(--mist)}
+body.bg-navy{background:var(--navy-800)}
+
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font-family:inherit;font-size:16px;color:var(--navy-800)}
+:focus-visible{outline:none;box-shadow:var(--shadow-focus)}
+
+.icon{width:1em;height:1em;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:block}
+
+.app{display:flex;flex-direction:column;height:100%}
+
+/* ---------- header ---------- */
+.hdr{
+  flex:0 0 auto;display:flex;align-items:center;gap:18px;
+  padding:12px 22px;
+  background:var(--pk-hdr-bg);
+  border-bottom:1px solid var(--pk-hdr-border);
+}
+.hdr h1{font-family:var(--font-sans);font-size:var(--pk-page-title);font-weight:700;letter-spacing:.01em;white-space:nowrap;color:var(--pk-hdr-text);opacity:.85}
+.hdr .logos{flex:1;display:flex;align-items:center;justify-content:center;gap:16px;min-width:0}
+.hdr .logos img{max-height:46px;max-width:42%;object-fit:contain}
+/* The Jacuzzi script fills its frame edge to edge while the BathWorks mark
+   carries its own margin, so matching their box heights makes Jacuzzi read
+   oversized. Optical balance, not measured balance. */
+.hdr .logos img.logo-secondary{max-height:37px}
+.hdr .logos .wordmark{font-family:var(--font-serif);font-size:26px;font-weight:600;letter-spacing:-.015em;color:var(--pk-hdr-text)}
+.hdr .logos .wordmark.alt{font-style:italic}
+.hdr .logos .divider{width:1px;height:32px;background:var(--periwinkle-200)}
+
+.btn-pricing{
+  background:var(--btn);color:#fff;font-weight:700;font-size:18px;
+  padding:13px 30px;border-radius:var(--radius-md);
+  transition:background var(--dur-fast) var(--ease);
+}
+.btn-pricing:hover{background:var(--navy-700)}
+.btn-more{
+  width:48px;height:48px;border-radius:var(--radius-md);background:var(--mist);
+  color:var(--navy-800);display:grid;place-items:center;font-size:22px;
+  transition:background var(--dur-fast) var(--ease);
+}
+.btn-more:hover{background:var(--periwinkle-200)}
+
+/* ---------- offers ---------- */
+/* Each block is its own opaque card with soft edges, and the background
+   photograph shows in the gutters between them. The board is only a
+   layout wrapper: it carries no fill of its own. */
+.stage{flex:1 1 auto;overflow:auto;padding:24px;display:flex}
+.board{flex:1 1 auto;min-width:0;display:flex;flex-direction:column}
+.board.one,.board.focused{max-width:840px;margin:0 auto}
+.grid{flex:1 1 auto;display:grid;gap:var(--pk-gap-col);align-items:stretch;grid-template-columns:repeat(var(--cols,1),minmax(0,1fr))}
+/* Focus mode: one offer, so give the number the room it just gained. */
+.board.focused .offer .title{font-size:44px}
+.board.focused .offer .subtitle{font-size:19px}
+.board.focused .finance{padding:28px}
+.board.focused .finance .amount{font-size:84px}
+.board.focused .finance .amount .per{font-size:33px}
+.board.focused .finance .flabel{font-size:19px}
+.board.focused .lines .row .k,.board.focused .total .k{font-size:19px}
+.board.focused .lines .row .v{font-size:28px}
+.board.focused .total .v{font-size:46px}
+
+.offer{position:relative;display:flex;flex-direction:column;gap:var(--pk-gap-block);min-width:0;height:100%}
+.offer > .head{padding:0 2px}
+/* Titles and subtitles are held to a single line each. "Scheduling Rewards"
+   is the longest of the three, and if it wrapped, its navy panel would sit a
+   line lower than the other two. The type scales down to fit rather than
+   wrapping, so the panels stay level at any width. */
+.offer .title{
+  font-family:var(--pk-heading-font);font-size:clamp(17px,2.45vw,var(--pk-title));font-weight:600;
+  letter-spacing:-.02em;line-height:1.06;color:var(--pk-title-color);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.offer .subtitle{
+  font-size:clamp(11px,1.2vw,17px);font-weight:600;color:var(--pk-subtitle-color);
+  margin-top:6px;line-height:1.4;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+
+.panel{background:var(--surface);border-radius:var(--pk-radius);padding:var(--pk-pad);box-shadow:var(--shadow-sm)}
+.offer .body{flex:1 1 auto;display:flex;flex-direction:column;gap:var(--pk-gap-block)}
+
+/* Financing focal panel. Navy band, the highest-contrast element on
+   the slide, because the payment is what the homeowner is here for. */
+.finance{
+  background:var(--navy-800);color:#fff;
+  display:flex;flex-direction:column;box-shadow:var(--shadow-md);
+}
+.finance .promo{
+  background:#fff;color:var(--navy-800);
+  font-weight:700;font-size:15.5px;line-height:1.3;
+  padding:10px 15px;border-radius:var(--radius-pill);
+  margin-top:14px;text-align:center;
+}
+.finance .flabel{font-size:17px;font-weight:600;color:#C9D4E6}
+.finance .amount{font-size:var(--pk-amount);font-weight:700;letter-spacing:-.035em;line-height:1;margin-top:4px;color:#fff}
+.finance .amount .per{font-size:27px;font-weight:600;letter-spacing:-.015em}
+.finance .amount.text{font-size:34px;letter-spacing:-.02em;line-height:1.15}
+.finance .plan{font-size:16px;font-weight:600;color:#C9D4E6;margin-top:10px;line-height:1.45}
+.finance .plan.split{font-size:19px;color:#fff}
+.finance .plan.split strong{font-weight:700}
+.finance .financed{font-size:15px;font-weight:600;color:#C9D4E6;margin-top:11px}
+
+.rule{height:1px;background:var(--border);margin:2px 0}
+.breakdown{flex:1 1 auto;display:flex;flex-direction:column;border:1px solid var(--border);box-shadow:none}
+.breakdown .rule{margin-top:auto}
+
+.lines{display:flex;flex-direction:column;gap:11px}
+.lines .row{display:flex;justify-content:space-between;align-items:baseline;gap:14px}
+.lines .row .k{font-size:var(--pk-base);font-weight:600;color:var(--slate-600)}
+.lines .row .v{font-size:25px;font-weight:700;letter-spacing:-.02em;color:var(--navy-800);white-space:nowrap}
+.lines .row.credit .k{color:var(--credit);font-weight:700}
+.lines .row.credit .v{color:var(--credit);font-size:23px}
+
+.total{margin-top:16px}
+.total .k{font-size:var(--pk-base);font-weight:600;color:var(--slate-600)}
+.total .v{font-size:38px;font-weight:700;letter-spacing:-.025em;line-height:1.05;color:var(--navy-800);white-space:nowrap}
+.save{font-size:16px;font-weight:700;color:var(--credit);margin-top:6px}
+
+.offer .foot{margin-top:auto;display:flex;flex-direction:column;gap:11px}
+.btn-fin{
+  width:100%;background:var(--btn);color:#fff;font-weight:700;font-size:17px;
+  padding:16px 14px;border-radius:var(--radius-md);
+  transition:background var(--dur-fast) var(--ease);
+}
+.btn-fin:hover{background:var(--navy-700)}
+
+/* Every column reserves this strip whether or not it has a button, so a
+   column that has one is exactly as tall as a column that does not, and
+   the cards line up. Quiet by design: the rep needs to find it, the
+   homeowner does not need to notice it. */
+.focus-row{display:flex;justify-content:flex-end;align-items:center;height:26px;flex:0 0 26px}
+.btn-focus{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11.5px;font-weight:700;letter-spacing:.02em;
+  color:rgba(83,88,96,.62);
+  background:rgba(255,255,255,.55);border:1px solid rgba(3,36,86,.07);
+  padding:0 10px;height:26px;border-radius:var(--radius-pill);line-height:1;
+  transition:color var(--dur-fast) var(--ease),background var(--dur-fast) var(--ease);
+}
+.btn-focus:hover{color:var(--navy-800);background:#fff}
+.btn-focus.on{color:#fff;background:var(--navy-800);border-color:var(--navy-800);font-size:12.5px;padding:0 13px}
+.btn-focus.on:hover{background:var(--navy-700)}
+.btn-focus .icon{width:12px;height:12px}
+
+.empty-slot{
+  border:2px dashed var(--periwinkle-200);border-radius:var(--radius-lg);
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  padding:32px;color:var(--slate-600);font-weight:600;font-size:17px;line-height:1.6;min-height:240px;
+}
+
+/* ---------- pricing drawer ---------- */
+.scrim{position:fixed;inset:0;background:rgba(2,26,64,.45);opacity:0;pointer-events:none;transition:opacity var(--dur-base) var(--ease)}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{
+  position:fixed;top:0;right:0;height:100%;width:min(420px,90vw);
+  background:var(--cloud);box-shadow:var(--shadow-lg);
+  transform:translateX(102%);transition:transform 320ms var(--ease);
+  display:flex;flex-direction:column;z-index:20;
+}
+.drawer.on{transform:none}
+.drawer header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--border);background:var(--surface)}
+.drawer header h2{font-family:var(--font-serif);font-size:18px;font-weight:600;color:var(--navy-800)}
+.drawer .scrollarea{flex:1;overflow:auto;padding:12px 16px 16px}
+.drawer footer{padding:10px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--surface)}
+
+.grp{margin-top:13px}
+.grp:first-child{margin-top:0}
+.grp > .lbl{font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--slate-600);margin-bottom:5px}
+
+.tog{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);
+  padding:8px 11px;margin-bottom:4px;cursor:pointer;
+  transition:border-color var(--dur-fast) var(--ease);
+}
+.tog:hover{border-color:var(--border-strong)}
+.tog .name{font-size:13.5px;font-weight:700;line-height:1.2;color:var(--navy-800)}
+.tog .name small{display:block;font-size:11px;font-weight:600;color:var(--slate-600);margin-top:1px;line-height:1.3}
+.sw{flex:0 0 auto;width:42px;height:24px;border-radius:var(--radius-pill);background:var(--periwinkle-200);position:relative;transition:background var(--dur-fast) var(--ease)}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform var(--dur-fast) var(--ease);box-shadow:var(--shadow-sm)}
+.sw.on{background:var(--btn)}
+.sw.on::after{transform:translateX(18px)}
+
+.slider-row,.planpick{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:9px 11px;margin-bottom:4px}
+.slider-row .top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.slider-row .top .name{font-size:13.5px;font-weight:700}
+.slider-row .top .val{font-size:13.5px;font-weight:700;color:var(--btn)}
+.slider-row input[type=range]{width:100%;accent-color:var(--btn)}
+.planpick .name{font-size:13px;font-weight:700;margin-bottom:5px;color:var(--navy-800)}
+.planpick select,.finance select{
+  width:100%;padding:7px 9px;border:1px solid var(--border-strong);
+  border-radius:8px;background:#fff;font-weight:600;font-size:12.5px;color:var(--navy-800);
+}
+
+.link-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--btn);padding:6px 2px}
+.link-btn:hover{color:var(--navy-700);text-decoration:underline}
+.ghost-btn{border:1px solid var(--btn);color:var(--btn);font-weight:700;font-size:13.5px;padding:9px 13px;border-radius:var(--radius-md);background:var(--surface)}
+.ghost-btn:hover{background:var(--mist)}
+.solid-btn{background:var(--btn);color:#fff;font-weight:700;font-size:13.5px;padding:9px 14px;border-radius:var(--radius-md)}
+.solid-btn:hover{background:var(--navy-700)}
+.danger-btn{border:1px solid #B3261E;color:#B3261E;font-weight:700;font-size:12px;padding:5px 9px;border-radius:var(--radius-md);background:var(--surface)}
+.danger-btn:hover{background:var(--mist)}
+.x-btn{width:40px;height:40px;border-radius:var(--radius-md);background:var(--mist);color:var(--navy-800);display:grid;place-items:center;font-size:20px}
+.x-btn:hover{background:var(--periwinkle-200)}
+.x-btn .icon{width:20px;height:20px}
+
+/* ---------- modals ---------- */
+.modal{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(2,26,64,.45)}
+.modal.on{display:flex}
+.modal .sheet{
+  background:var(--cloud);border-radius:var(--radius-lg);width:100%;max-width:var(--mw,660px);
+  max-height:92%;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);
+}
+.modal .sheet > header{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 18px;border-bottom:1px solid var(--border);background:var(--surface);border-radius:var(--radius-lg) var(--radius-lg) 0 0}
+.modal .sheet > header h2{font-family:var(--font-serif);font-size:18px;font-weight:600;color:var(--navy-800)}
+.modal .sheet > .content{overflow:auto;padding:14px 18px}
+.modal .sheet > footer{padding:11px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:12px;align-items:center;background:var(--surface);border-radius:0 0 var(--radius-lg) var(--radius-lg)}
+
+.field{margin-bottom:16px}
+.field label{display:block;font-size:16px;font-weight:700;margin-bottom:7px;color:var(--navy-800)}
+.field .wrap{display:flex;align-items:center;background:#fff;border:1px solid var(--border-strong);border-radius:var(--radius-md);padding:13px 15px;gap:9px}
+.field .wrap:focus-within{border-color:var(--navy-800);box-shadow:var(--shadow-focus)}
+.field .wrap .pre{font-weight:700;font-size:19px;color:var(--slate-600)}
+.field .wrap input{border:none;outline:none;flex:1;font-size:21px;font-weight:700;background:transparent;min-width:0}
+.totrow{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.totrow .k{font-size:16px;font-weight:600;color:var(--slate-600)}
+.totrow .v{font-size:33px;font-weight:700;letter-spacing:-.025em;color:var(--navy-800)}
+
+table.fin{width:100%;border-collapse:collapse;font-size:16px}
+table.fin th{text-align:left;font-weight:700;padding:11px 9px;border-bottom:1px solid var(--border-strong);font-size:13.5px;letter-spacing:.03em;text-transform:uppercase;color:var(--slate-600)}
+table.fin td{padding:14px 9px;border-bottom:1px solid var(--border);font-weight:600;color:var(--navy-800)}
+table.fin tbody tr{cursor:pointer;transition:background var(--dur-fast) var(--ease)}
+table.fin tbody tr:hover td{background:rgba(3,36,86,.045)}
+table.fin tr.sel td{background:rgba(3,36,86,.075)}
+table.fin tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--btn)}
+table.fin tr.sel td{font-weight:700}
+table.fin tbody tr:focus-visible{outline:none}
+table.fin tbody tr:focus-visible td{background:rgba(3,36,86,.075)}
+table.fin td.pay{font-weight:700;font-size:19px;white-space:nowrap}
+
+/* ---------- admin ---------- */
+.tabs{display:flex;gap:2px;background:var(--mist);border-radius:8px;padding:3px;margin-bottom:11px}
+.tabs button{flex:1;padding:8px 6px;border-radius:6px;font-weight:700;font-size:13px;color:var(--slate-600)}
+.tabs button.on{background:var(--surface);color:var(--navy-800);box-shadow:var(--shadow-sm)}
+.tabpane{display:none}
+.tabpane.on{display:block}
+
+.editcard{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:11px;margin-bottom:8px}
+.editcard .cardhead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.editcard .cardhead strong{font-size:13.5px;color:var(--navy-800)}
+.egrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px}
+.egrid label{display:block;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--slate-600);margin-bottom:3px;line-height:1.3}
+.egrid input,.egrid select{width:100%;padding:6px 8px;border:1px solid var(--border-strong);border-radius:6px;font-weight:600;font-size:12.5px;background:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.chip{border:1px solid var(--border-strong);background:#fff;border-radius:var(--radius-pill);padding:5px 11px;font-size:12px;font-weight:700;color:var(--slate-600)}
+.chip:hover{border-color:var(--navy-800);color:var(--navy-800)}
+.chip.on{background:var(--btn);border-color:var(--btn);color:#fff}
+.sit-note{
+  background:#EAF3EE;border:1px solid #BFE0CC;color:#0B5B34;
+  border-radius:8px;padding:7px 10px;margin-bottom:11px;
+  font-size:11.5px;font-weight:700;line-height:1.4;
+}
+.hint{font-size:11.5px;color:var(--slate-600);font-weight:600;line-height:1.5;margin-top:5px}
+.warn{background:var(--mist);border:1px solid var(--periwinkle-200);border-radius:8px;padding:9px 11px;font-size:11.5px;font-weight:600;line-height:1.5;margin-bottom:10px;color:var(--navy-800)}
+
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:14px}
+.hidden{display:none !important}
+.err{color:#B3261E;font-size:14.5px;font-weight:700;margin-top:9px}
+.dirty-flag{
+  margin-right:auto;color:#B3261E;font-size:11.5px;font-weight:700;line-height:1.4;
+  background:#FBEDEC;border:1px solid #F0C9C6;border-radius:7px;padding:6px 9px;
+}
+#adminStatus:empty{display:none}
+.solid-btn.pending{box-shadow:0 0 0 3px rgba(179,38,30,.30)}
+
+@media (max-width:1000px){
+  .finance .amount{font-size:min(var(--pk-amount),52px)}
+  .lines .row .v{font-size:21px}
+  .total .v{font-size:31px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="hdr">
+    <h1 id="pageTitle">Investment Guide</h1>
+    <div class="logos" id="logos"></div>
+    <button class="btn-pricing" id="openDrawer">Pricing</button>
+  </div>
+  <div class="stage"><div class="board" id="board"><div class="grid" id="grid"></div></div></div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+
+<!-- Pricing drawer -->
+<div class="drawer" id="drawer">
+  <header>
+    <h2>Pricing</h2>
+    <button class="x-btn" data-close-drawer aria-label="Close"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </header>
+  <div class="scrollarea" id="drawerBody"></div>
+  <footer>
+    <button class="link-btn" id="resetSession">Reset for next customer</button>
+    <button class="link-btn" id="openAdmin" title="Administrator settings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>Admin</span></button>
+  </footer>
+</div>
+
+<!-- Price input modal -->
+<div class="modal" id="inputsModal" style="--mw:620px">
+  <div class="sheet">
+    <header><h2>Enter pricing</h2><button class="solid-btn" data-close-modal="inputsModal">Done</button></header>
+    <div class="content" id="inputsBody"></div>
+  </div>
+</div>
+
+<!-- Financing table modal -->
+<div class="modal" id="finModal" style="--mw:760px">
+  <div class="sheet">
+    <header><h2 id="finTitle">Financing Options</h2><button class="x-btn" data-close-modal="finModal" aria-label="Close"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></header>
+    <div class="content" id="finBody"></div>
+  </div>
+</div>
+
+<!-- Admin modal -->
+<div class="modal" id="adminModal" style="--mw:980px">
+  <div class="sheet">
+    <header>
+      <h2 id="adminHeading">Administrator</h2>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="ghost-btn hidden" id="adminLock">Lock</button>
+        <button class="x-btn" data-close-modal="adminModal" aria-label="Close"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+    </header>
+    <div class="content" id="adminBody"></div>
+    <footer id="adminFooter" class="hidden">
+      <span class="hint" id="adminStatus" style="margin-top:0"></span>
+      <span class="dirty-flag hidden" id="adminDirty">Not saved yet. Use a Save button, or these changes vanish when the page reloads.</span>
+      <button class="ghost-btn" id="revertBtn">Revert changes</button>
+      <button class="ghost-btn" id="exportHtmlBtn">Save .html</button>
+      <button class="solid-btn" id="exportBtn">Save Ingage .zip</button>
+    </footer>
+  </div>
+</div>
+
+<!-- ===================== CONFIGURATION ===================== -->
+<script id="pk-config" type="application/json">
+/*PK_CONFIG_START*/
+{
+  "page": {
+    "title": "Investment Guide",
+    "priceAdjustmentLabel": "Down Payment",
+    "backdrop": "transparent"
+  },
+  "branding": {
+    "button": "#032456",
+    "credit": "#0F7A45",
+    "wordmarkPrimary": "BathWorks",
+    "wordmarkSecondary": "Jacuzzi",
+    "logoPrimary": "data:image/png;base64,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",
+    "logoSecondary": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABiMAAAFICAYAAAAyKI03AAAAAXNSR0IArs4c6QAAIABJREFUeJzt3euV4za2hmHYy/+LJ4LmRNA8EbQmAutE0HIEliNwOQLLEVgdwagjGFUEo4rAqghGFUGfHwJdbLYuvADYewPvs9a3PFebLVEkgI3Ldw4AAAAAAAAAAHtqn8Y5V3X+vfP/2cOEv+eLc+7o//XBOXfq/HUf8NqL8530BQAAAAAAAAAAcEfjnFv4v9bOuQ9C1/HiixP7zl8BAAAAAAAAAIBBjXPu0Q/2f1GevXNu3VmVAQAAAAAAAAAAlFo657Z+SyTpAsPUHN25iEJhAgAAAAAAAAAAJRrn3MZ4AeLWiomV9AcMAAAAAAAAAECpVka2YAq5WqKS/tABAAAAAAAAACjByg/OSxcIJHLyZ0sAAAAAAAAAAIAISi5CXFopsZD+QgAAAAAAAAAAyMWioO2YxmbH1k0AAAAAAAAAAExX+YOppQf8tefEKgkAAAAAAAAAAMZbsCXT6HCWBAAAAAAAAAAAAz0qGNi3mq30lxfTd9IXAKB47TK0yjnXXPjPW7Vz7l3gf/arc+7Q+8+OPq39lX8NAAAAAACAN5UfTP9R+kKM++wP+z5JX0hoFCMAxLboFBq6f30vfWEzdIsYbYHi4F8SFCwAAAAAAEBpKj8mYnm8R5OnHM+RoBgBIJSFX73Q+MRYyWBFW6zY+7/upC8IAAAAAAAgksaPfZQ6DhTLJ79CAgCK1viH4dYPtkvvp6c9J14eAAAAAAAgQ40f95Aee8k1G+kvOCRWRgAYovErH9o8SF+QUf/onUcBAAAAAABgVeXHORgniuv/2HUDQM4qP5N/R3U7aLLb6w8AAAAAABSpYreMZDn5zxsAslE759a8SKKmlv6SAQAAAAAAAtgrGGcpKayMAGAeBQheGgAAAAAAAGNsFIyzlBh23ABg0ooKdvKwKgIAAAAAAFi3VDDGUmo4hxSAGbWvXHMGRPpspL98AAAAAACAmSrGlcSzkr4JAOCWBasgRMMhQwAAAAAAIAc7BeMspecgfRMAwCUrv3xL+iFZeqhYAwAAAAAA6xYKxljIOZwdAUANihB6spe+GQAAAAAAAAJgrElPttI3AwBQhNCVE4dWAwAAAACADKwUjLOQr8ecAEAEZ0LozKP0jQEAAAAAABAAk1/1ha2aACRV+2VZ0g8/8m2O0jcHAAAAAABAAKyK0BkmwQJIZu2XZEk/+MjlUJ0GAAAAAAA5YFWEznBOKYDoGufcQcEDj1wPhwgBAAAAAIAcLBWMs5DrAYBoHhU85MjtnJxzlfSNAgAAAAAAEMBOwVgLuZ5a+gYZ6wfpCwBwV+0f/u+lLwR3bXxBAgAAAAAAwLLKOfej9EXgptrauaXfS18AgJuWflsmChH6vTgODwIAAAAAAHlYSl8A7jK3OwfFCECvjXPuX865B+kLwSAr6QsAAAAAAAAIhGKEfo30BYzFNk2APpVzbs9qCFOe/HcGAAAAAACQA7ZoQnCsjAB0afxebxQibGFVBAAAAAAAyMVC+gKQJ4oRgB5LP7uebZls+cPaYUEAAAAAAAA3UIxAFBQjAB1WnA9h0qvj0GoAAAAAAJAXihGIgmIEIO/ROfen9EVgko1z7iR9EQAAAAAAAAGZOxgZNnCANSBr65z7KH0RmOTFsSoCAAAAAADkpWbnDjPMTZBlZQQgh0KEbRQiAAAAAABAbmrpC8BgB+kLGItiBCCDQoRtL/47BAAAAAAAyAnnRSAaihFAehQi7FtJXwAAAAAAAACKxjZNAG56pBBh3pNzbi99EQAAAAAAABGwMsIOtmkCcNXKOfer9EVgNs6KAAAAAAAAgKQX6QuYgmIEkMbSOfen9EVgNlZFAAAAAAAAQNpR+gKmoBgBxNdw2HE2WBUBAAAAAABy1khfAAYxOVmWYgQQV+UfDg/SF4LZPll90AMAAAAAAAzEGJYNJldGfCd9AUDmDs6599IXgSD+YfVBDwAAAAAAMNAX6QvAICbHqVgZAcSzpRCRjU8WH/AAAAAAAADIzovVcSqKEUAcK+fcR+mLQDCcFQEAAAAAAAANzG4jTjECCK9xzm2kLwLBsCoCAAAAAAAAWpgtRnBmBBAe50TkxeQefAAAAAAAABPsnXMfpC8CN/2Pc+4kfRFTsDICCGtDISIrrIoAAAAAAACAFp+tFiIcxQggqIVz7mfpi0BQnBUBAAAAAABKwqRM3XbSFzAHxQggjMo5t5W+CAT1mRcwAAAAAAAoDGMher1aH3+kGAGE8eiceyd9EQiKQ8gBAAAAAEBpzB6OXADThQjHAdZAEAvn3L+lLwJBPfnvFQAAAAAAoDRfpC8AF/3D+soVVkYA87A9U544KwIAAAAAAJTqSfoC8I1P1gsRjmIEMNua7Zmy88SSRAAAAAAAUDDThyRniomzQOEav2yN5BW2ZwIAAAAAACWrFYzPkLdkc64pZ0YA0+2dcx+kLwJBvfgXLgAAAAAAQMkY99Lh1Y9VnaQvJIQfpC8AMGrJAzlLLHkDAAAAgG8ten/t2/uBskPCawIQ14axLxXWuRQiHCsjgMmOnBWRHVZFAAAAAMDZ0hceFs659yP/v09+v/ldDoetAoVj/EvWE9uJA3hUsFccCZ+19I0FAAAAAIJqPxP6FLCftXfOraT/YAAmWyoYryk1JybNAqgCN8yIjpz8dwsAAAAApamdc9vIfa4Ds3sBs/YKxm1KzFL6iwcgb6PgYUTCh7MiAAAAAJToMfGEux0TwQBzGgXjNqWFcSoArlbwMCJxQmMYAAAAQEkqwdnORz+4CcAOtixPl630lw1Ah9jLVgkPeQAAAACIrVGw/fCJsyQAc9iuKX4O0l8yAB1YFZFvOAwIAAAAQCk0FCK6oSAB2FH5lU3Sz41cc2DnDgAtVkXkmb30jQUAAAAAiWgrRLShIAHYofU5Yj0UIgD8jVUR+WYhfXMBAAAAQAKV4gHEE2dIAKZQkAibLYUIAF2sisgzR+kbCwAAAAAS0b7X+5HBOMAUChJhspH+IgHowqqIfMNSYAAAAAAlWCvofw3JTvqDAjBK47cXkn52WMyJcSkAl2wUPKBInIc+AAAAAORO8/ZMl7KU/sAAjFIZWHmlLQc/+RkAvmKt0UaG51H65gIAAACABKxtO8x2TYBNjwqeHxbCeBSAq3iQ5hsq0AAAAAByZ3XbYQbrAJvYtul69oxFAbjnqOBhRcJnK31jAQAAAEACVifYnVgdAZi2ZqeRv3N0zi2kvxAA+q0UPLBInDTSNxcAAAAAJGB5gt1a+sMDMEtV+DmsRw6oBjAGh+/kmb30jQUAAAAACSwV9L/m5Cj9AQIIovZFiVJWSuxZCQFgrEbBw4vECVVpAAAAACXIYUbyUvpDBBBM5Vc8WV6xdS1H/8zlTAgAk2wVPMhInJcDAAAAAJQgh0NkOe8PyFPjB+8tFybaAgRbgY/0nfQFAMpU/oHyIH0hCO43dz7ADQAAAAByVjnn/it9EQG8cpA1kL3Gr4JaOOc+SF/MDa9+C6Y2B+kLsuoH6QsAlFlSiMgWs2oAAAAAlCCXmboPvo++k74QANEcegP7C5/G553QdT35ycoHig9hUYwAvraWvgBE8YltmgAAAAAUIpdihPODkhQjgHK0Kw+6Fn6VVNP5q/NnNEwpVrx2igtHn5P/z46MH8VFMQJ40zjn3ktfBKJgVQQAAACAUuS0tdFC+gIAiGuLExQmM0AxAnjDqog8PV+oqgMAAABArnJaGcGEwTe1zxj0hQGoQjECeLOUvgBEsZG+AAAAAABIKKeVEc6vjsh9UL0tNLTb0LQrQpqA51o++b/uO39lSxoASVGMAM5WHFydpVeW8QEAAACAaU1mxYi6d0Dvh0T/3A+9v/7q//raO6R37/fPB4DgKEYAZ6yKyNOORlS2ms6Mr+4+steWLg852Orpwn926hxs5fy/Pl34zwEAABDXlC1qXKf9BrumfO+a1H7MYeGjbSLkgy9QdIsiL74osaM4ASCk76QvAFCgcs79V/oiEMU/WHJqVn95cvvXVLOGhnrtdHAPPkcKFQAAAKNc26JmyISSMV46/YN9pw2X21Y1e4Xt5jmeDB5k3fgdGJaB72EpT74wscvstwIgMYoRwPng6t+lLwLBWWywlqjuLVOuMzqk7rlToNhToEChqt4hmv1/P0R3RiurkgDAPqktaoZ46rTfDobfORQjZNR+fCGXAsQ1z865LYUJAFNQjADODcxcBj/x5iffQIIui07nU+MS5ZhefcdwT3ECmag6M1ibXqEhxQDIsy9O7Hurk9hGAAB00b5FzS1W229b59xH6YsITPP41conpwLQUJ87hQkAuEvzwxxIoXbO/SV9EQjutXOeAORUnU7ngqLfN7r7sNJ4h3bd1UvtTFatg0kvvVVJOR14CQBW5LZFTctK++2xczhxLrSNX1V+FcQqs3t8qhdflNiyWgLALdoe5kBqbNGUpz/8d4v0Gt/pXFJ8GOW106nV3LFFGZreCqYcOtjsc2xD/5ygpjO5YGoB7LUzk7l7xs+JQhUQXClb1LTa9ttW4fNk5Zz7U/oiAtMyftUWIdaKJ2ZI++TOBTHaXAAA9Bycc19Idqmlb6zCLH0n7KTgu88hR3duvHMfI5WFO99zewX3f6rf2GbC2RUIp50xvelssyV5P+z8oBL3BDDNqqB3yK1nyVrR6uxGwWcSOho80ucZlb2Rsz4AJKSlsgxIYIumPFk53MyyqrP64Ufpi8ncJ6Wz7WBbd+/u0n/Dz50tBThrIp5lZ6WN9v20u/vDs5IGuI4taq7TMitcywB+KJLjV0tfQOden+bJvU18gV4xVqi2njr/ur0P+itWASB7awUzBUj4rKRvrIyxAkIuzCrCXI3vRB8V3M8ac/LPN1YkhdH4dlYOM6UPymY7A9Iqx+zwoZFuv+0UfAYhI6HO8HOUDG0tHTStUG3Tbp+58dfGalUAWWKLpvxCNT28mgFMVZHu1Kay6qwIeZS+GMMWnUMEpe9dS6GjPE0JBa9dIc/gIS4NRp86z+0lAwnZoQgxPXuh30Nuk+8kPj/u9zjZUORPyuqWrN12BW0KAObVCh6sJHw20jdWRtj7V3f2GQ6W3hrkwHAlDAinCkWJ+2r3thWJ9PeVMsfCV2JuRn5e7UzHNcWcqyr/2azc+Te185/bsXPPrQWvb1ng7zxGUr9XcuvzplKxGiJJTsLPtZzVGa1Q7d8zW/9OAgBzcpslQs5h0GiedlCJGUB2ksusonszz3Bbu283K/7i5DGT31lISwZq3Bc/OFtahzjUobjHC0WK3NtxbcFh6c7Ple2E7TFSF3PqDAezNCTleyWnZ3UKDYW35Dkw6z2IurD+AIUJAOaU8oAuKRyGNV27lYv0d0imxfJg2JCZlgfpi1SM3y6/s5TaoheDNN9GagsWCSmeOW2hYuvOg7aP/nmnuWBRd65x7b4uNoTsd6TcupAtauLf5yneKwsFf9ZQiW2l4M9YcnKZZJVS5e/b0se3jo7JQ6Z8J30BgIDKOfdf6YtAcD/5Th+Ga/eO/CB9IQjis2+MWjg7Zcy9x2/7a5UfvFg7595LX0yBLP3OQmmLEGvn3IP0xSj3mx9MyfX+qHyHX8t98NorWJ9uFLCPPvfcWnnQ/+8agc/ilwTbkrZb1NA+TCPFe+XonHsX8e+fSszxq61z7mPEvz+GeelsF4zr2h0NloreyRq8+vfX48B3PgAkw4yH/JJrpz8WzoPIN0fl+3E3I++9EzNc/sbBoXqi/XcWCvfctOS83cRSwedbemKvDGn4zYvkFHmVRC6/3RgqVpmqDGdBXragHz84nP0GQJWc9s0k59BYGWbF9hrFRNthcPXEjl7K7Si0mvrZkfJ+ZyFRhJifHA+45lkkm9gzhZmwJZ9txEkY1gcwY8xyrtjeRnVyLu6PRRFiWk6O/iQAJaQfiCR8qHjfRuOlzOwUrCqYM5Be+qoIihA2ktsWYkPOcSHl3h/cG7KJWeDifaMnx0gDsKEOn5dK6GIchQgbOWU++eMe+vFhUsqqZgBK5bJElbyF/SSvo/FCDkLFuhAD6aXOYqEIYS+HDApnNe+LaNFQGA6hVvBZlpxYe1+zRY3exBiAfVTw55qakH0+ChH2EnPVkEY1O3pECYekAxCxUfAAJGGT4zYIczGYSbo5JVziHOreK3FVRMm/26MfZNi480BJeyDfwmfZ+c/3SrcPslyQYEsm7o8h1go+x5ITo73LgKz+xBiAtVp43gX8DBjktZkStm1qz+uS/qxzTgn3EQBlWF6eVzi4+mscNkqu5RR5aWrogfSSVkWU2OnY+z/zYsYgS+OLF5qed9YGnBsGIrk/RmDwTi4x2rsUIuwk9CrXStm7c2hCtQ1LnfiRS2If9i6JrTLT3kdMagWQBMvL80tuezHPQeOFDEnoRleM2fyxtqLQaG10QGBsTv4+idV51FSEtTLgXFoBTEsst1u0/MZKTIwCPYUIWwm9yrUx+JsO8TtghVc+yWniUkXBXywb6S8fQP5ofOQXltexz3c/J9+Ye+xs8bLobfeyKbxwE6Ig0UScWVbCLJVFIffgPuH3WSsaXNNckOCdIR+LHV/rB99aToxtC5kZbjch36krBX+eMZm7wneh4M9AwiaHcySWBguDucXyRBEABlBtzisH6RtKAWa2vmU3YdZ1yatJpnZmYx+KnvuqiFIOo9sKHZyuaduRkAdthkKHV0+sFV1pb8gldPGK8/PsJ+SMcEsFiTnFiJr3X7bRPAHklornsapQkAAQjfQDjoSNtY58SAtFA27SmTvoqWnwUvNvaJWocJPz77qELZmkihBdmrae0DQDng6vrpwU/FbGYDWNXELeJ5YGnsnthBw4s3JfzMEzLO9YO5CYM7t0hoIEgOBYlplfLM6AmIsZFG/ZB2x0VgWvkLi1vLl2affiz3VVRAkdDg1FiC5Ns7ilC2wVgzBqY2WFZ6Xgsyo1IQdG2Gorv4TcokZ7QWLOIe6a2gQk7j1ioSCxUjRphnwbChIAgmIAN6+U+JIoZY/5IVlH+Hy1d8Ji5uSfkUufR6HBc+lB2xhy7wAfAuzhHEOt4LPp/r6kOsclFMKsJ8b7LLSlgs+p1IQq8pY86SL3hNyiZqF4kHTq1ocU4cqK9oIEY1I2kmOfFIAQOuN5RePgV0w0XM45Rm5g0lGX/W5zkvsg8MmF3bM6Bk2fv8QMeM2DSuQtFrZrog0ik5DnzpRwVlHJCVmQaJS2h6due6ipLUDSRdtgMqtU7aW08SYAEbC8PK/kNmh5S+4DmmOyT7A1FwMuctHWaZijhNUQ2gdPnV9BJ/1ZdZOyeFPySi+L0b7aU+PAZAkJNRDCypYyErIgoXHgdMoqsrWC6yZy0dK3oD9vM6dCtwUHEBCd8rxiYUuDEGhAvyXVQA3PCpnkUmCsFXbeQ0f7aogujUWhFFsH8O6wGa0FPk1bnpWUUKsiKlZIFZWQBQmnbJLO2OIc9z75oqAg0XAfms5O+P4BYJy22ZFkXrR22EOpWE7/VVLOGOWge5lIdxRCWGbe2TgZXK6saRClTeztmmjv2I3W1REUt2QS6r3IM6G8hC5IaGnfjKWxDUBkItXPYJJbHlkK3T8AMsDy8nySe3WaQ6q/TurBGYoR6ZPDqojcO7yhBzZS0bpKJVanmEFH+9E42YLJEekT6r1Im6bchH5vS2/bNHalECu6SD+pCxIUIvIJ2zUBmITGSF7JuTLN7MOvIzFLlI57+lheFVEXsAes1tna92g+KypGp4ZCRB6ZekBrTBpmRJeWUO9FrQVZkiYxJhKshZ4JY5+NvBPJpaTqc9Cnzy8a22cAlKMqnU9O0jdTJGzL9G2kBkApRqSN5VURWrYtiBlL50P0aTwvItZnm3LQ5eTfV4/+eXltJn/j21/bAn4noT9fTXgnytwDIQaQObSafIlUkJA4H2vMZDQmIpJbiT2xkUJYvtG4ehWAYrwQ8kmOFemmgJnVYyM5E5uBl7SxuipC+0B3yd+NM3JoZagBxxRtnJP/50ztwFeCs2ktRtMK0Ny3oNOYUIVKtvwkbUIdht6X8rk+5n1J35/cysn3v2Pg3ss7VleLAxBCYzyf5FaNXjE4801iH+56TwmDzFpicVVEVUhHw3ohwkqBd+6gY+x78ejvhVCzai19N5LRdDYW31f6hPi9sSqc9BNrEC3FdpVj+gaat2gkehKjIFFC/4DkNx4FIBKWaeYT6UHq0Bj0/jZHBYdDMQs0XawNeJcykGrte+my9h3NWR0Rs9N7jHgfWPuOpO4LDWhDp0+oAWPOiiCXEnNWb8x30piV8fSvyNCEPL8rVSFi7962ybxWTKn8f79mG+goYXUEgEGYGZRPLA+QdXE+xOXEXDI7Bh34NLG2KqIpZBWT5efswuhKyCmrI2IdjHhKdA9Y2EZLOhq2aqINnT4hZlyy3SS5lZhnQcUakF2MuAaL7QAilxBnqsQuROxmtgnYKjNsQhaxAGSM5XJ5JJeHfoqlzFajZRBU+nMoJVq+7yFKOKja2nfSVRlf0TS2MBdrgHiT+D3LQPf970MaEyfSJtS+/vR9yL3EfN+Hvv/GrBTj0HYyJXOevTGft9vAWwJZby9ritU+E4CEmB2RR3JYDlfKzOop0TDo4phNmCyWioulDJhabVTncu7O0BlvMZ5Rx5GzTkPK4buLFQ1bU/L9pE2I3yH75ZOhibn6KuQq4zF9QApxZGqmjDXE6iPsIp9LUErfJmY0tNEAKMZet/lEaqAklFJmVk+Jppc5+8ymScwtAkIq5X6wVoio/DXnNNlgyIHFMQraqVdD9DFwdDuSKM6nTai2UKwt3Eh+ibk9asg++NCiCYU4MjfrEfd4jAH9U8ItGilIzA8HWQO4iqWaecTa3vJ9vOyv56TsRc55EWm+cwurIkoZJLW06qx25wJRroXdW7+LKnDxJWWH9xbej7cjORGDrRzSJlRRmK1AyZjEbIeHaEeN2aKJ9wkJkSHP4hj32k6gf1TKpKtYGVO8AlAYOlJ5xPKDnpf87WgYDGsxoypNLKyKKKUQMWQ2vgbLQvauv/WuCznAeIg4G3asRsHnrjmSq5YY1E6XUJNuWBFOpiTEAb6XhJgUOGbCRAntBJImt969MQoRkn2jnFYZp46m3R0AKENHKo9omjk/RikDmlOj5ZyIFjOq0kT7qohSfrexBh9CaVdBlNRJutapCXlP7hV+79Kfu+ZIDVAwqG3ze2aLJjI1oQ5P7woxyWdM4Vz6MyR5pX94dBOh4HVSsFUq/d950damBqAAs5zziJWZu32lDGhOzVHhy5sZVfGjfUugUn63MfeJnqsp6Hu4lP62PCE/C62/P+nPXHNiDBAOweBEuoTcupCtJsmcxHhHzLmeMbOO2ZqZWIumtnhJE39CR9MuDyZ9L30BQARaHu6YR+vgyTWVH9T+KH0hyi1H7gMbW+Wc+1H6IgqgeYumbUG/25XCpcULP5D2n4K+h0s2/vnYfh6hPovfFMy+gx10rtPZBWoPVc65DwH+PijXR2Wrlsdci+T5OsBYr/6e1dIWtzr5UwOePQC+wV799qNpsHqIiq3BBkXjgDSzQONHc2GxpJn4mgYaXGfQXfpzyTnaixDSn4/mhDpLYKxcD4nXmFBbkTIznIRKqHfGnO3exq4Yov9FrETTiojWQsHnYjVSK1gBKMbghv1oGzS7hULEsGiZAdLH8yJ+tM4cKakQoen3RxEiTbQXIjib4H5SY1A7XULORt0o+POQfBLi3TFnos+YPiBbMxMr0ViIaEl/NpaDGdimCTliqbJ9VooRlR9Uey99IQaspS/ggprnRXRPSmeOlLQ106uSrVdqPwD3b3530f2kfEWSU9wpL5nWwnGOQrZz+d4Q0p8B7s85bY4x/2zeI7BA29ZMfU/SF2AYz6AZKEYgNzwQ7HsW3J5gDAoRw/2hdEBawwBt7jRuzVVSIcK583cg+Uyt/DX8xfksSVgoRDgGUFXinZjGc+A2Ee1QhPazf49MOWB9MeNd/2lke4X3CLTTXojAPKG2WywSxQjkhkaJfRZWRVCIGO7F6RyQdkpXa+TkRWERal1YIeKz8DO17YD9KngNJbFSiHC019SpnXPvpC+iEKyKgAUffRtuzES/auY7aGx/gUmI0G5toBCh/fo04xk0A8UI5IZGuW2vgffRjYFCxDgrpQeSNwy8RKetCLVyzv0ufREJvQqeG1D5Abd/8ztL5g9DhYiad6g6rIpI4zXw75SBEMT03jn3H3/P3psB3E4+mPrOH7sqwnH/QzkrE0Q09tOtmLJ6DN4P0hcABEYxwrad8hcihYhxPiucGd9iVURcoQdc5lr6fZBL8ij0PG38d89zMp1Pxp5p2g/XLhHFiDRCr1Rjiwik8NHns++rdYsGtX9+zN2GccoEFiY7QKtPyvpBiIOC6AwUI5CT2jn3IH0RmEX7S3vDANtgr8oHxxh4iUvTdmuNgWdLaE9C38HK/3N5F6fzZHBw39r15q7iUPlkQj+XGQhBSj9GOvtpyqoIJiBCK4vtMiA5tmlCTmiU2KZxf/mu0g69nUv60NxblgyWRqelGNGuZirt+5boBD361SelfdaSng0WVlfMZlXH2j1k1acIq9VYGQHrXt20VRFsjwKNLLbLGEObjgkBM7AyAjnhQWqblsHLSyhEjPOs/PtktkpcMQZcpii1EPGbQCGQZ2R6r4rP5LlF21kyoP2cSox2EYU9WLeZ2GZhEBDaWG2XYbrS+phBsTICOaFRYpvWg6vXDLKNpnl7pirSEnO80TLYWOK2aq8ChUAKETKW/rBQS1gVMdxzwn+WtVmcFj1F+L2yKgLWvcxos7AyAtqsDLbLHGNokEIxArmoChx0yslnpVv6rJxzv0tfhDGaD612DLpE96Tkt1xqEXGdeEYWhQgZvyl/zl6jpVBpQarf8YKZfUnEKBJTjIB1c2aRM4AKTf5QPLHyloo2AKRQjEAuWGJum8bDZRd+/3MMp/3Qamfg+qwB8r7XAAAgAElEQVTTMNi4KLSI+JL4WUohQsZnp+N3NtaaVRGjpCrqUqCP78XoIBUQk/bJS8BQT4b7lxT1IIZiBHLBg9SuV4WdtEbhNVkwdd/XVGpWUEWl4RD6uuDfbsqzUB4pRIh4MXrmTeVsFlAkUYzIR6yt81gZAateA7zL6PtDg1fj71Em9EIMxQjkggepXdpWRZR66O1cc/Z9TcXqrBUrNAw27gr97T4lLAQtnXO/Jvpn4WtLowcjbgr9Xc6R4vdcs1oluteI7VyKEbAqxCG/vFOggdV2WYsxNIihGIFcfJC+AEymaQCbQsR0jwYaY5ZnrminYYVTiQdWt1IVgmqFBeRS/GL0YMQFq2gmSbEygndifDsDbSMgpc8K2otACL8oWBE+F2NoEEMxAjmgomvXs7JtfUoezJzjycAA5YIZoFFthQdcls65nwX/+ZJSrorYUqwV8aSscD9UZeDdoNErxYhsaFgxCGhhdatBoO+z0XZZF20AiKIYgRywZ6Rdml7i7IE+nYXONp2fuCR/y6UPeKb6/a2ZQSXC8n7EjxSBJ0lRXKz4PUf3WdmEG0BaiO2ZAGm5FNWsti2RCYoRyAErI2zSsK1Liz3Qp/tsYIlqRYMrKukBl1LPiXAJV0VwALEcq4M3i4JXK82V4jfNOzE+TRNuAGm/BXy20feHJOvnRLRoB0AUxQjkgJURNmnZR7cpfFb1XBYOhV4WPFidguSAS+mz9VN99hxALONJUdF+jNJXK81FMcK+FwMTNYBUPjsmNCAPPxk9v6uPvjHEUYyAdTVbAJilYaCiYg/0WT4Z2YIgh6W0WkkOuDTOud+F/tkavCQaqK7Zwk6M1WfXhrbZZK+JBjqYWRwXA6/A2bPhdxnQ9UnJ+EUI/CbDeJa+AMsoRsA6OlM2aZkxtuXA6slejayKqAufOR+b5IBLLh2CqVJ99gyqybBS7O1bUryaJUWBkRmRcWnahhSQ9Gp4q0GgK6eiWuWc+1H6IjLBs20GihGwji2abNKwj+6aF/EsGyMv4FwajhpJDrg8Fl5ITPXZVwwsi7FYBKopEs6WqhiBeLZG2kdAbMtIK70sFuph12tmE2AtTCZEAShGwLqcXgwlkR6sWBS+vctcr0oKSkNQjIhHasCl4cD5ZJ89vx8ZVldFsO3hfJwXYV+q9pHFZwTK8VPE5xn3PlJaZFZgpm0fTg7nh4ihGAHLqsJnxlr1WfiFXrF8frZHI42yBfuWRyVVkJIuZmqQ6rOnwyLD4jvqkS3xZkvRPmooGEX1OeFAKQOy0Oo32mrIRC4HVrdW9I2DsjAeohbFCFjGFk02STdOd3TEZ3lhVQQSD7h0rSlCu6dEn33DZy0i1cHkIS1YrRREivYR78W4rLSPgFg+OZvbDAJ9fygYtwiNNkBYTAqY4QfpCzCi8bOph9JwMG8J2KLJHulBljUzN2ez0sGo2IoiKonGee3s3H8xpfrsecfKsFaIYLVhGKnOgeG9GM9L4j5gTrN1kYdPCQc7X5jhjYg+Z3i2woJxkOAoRsxAMeJs4Qc56k7hoQ7wgnv1DcWT/+vR/5XGYxgMlNgjObug4ZyI2V4MzRBZsgImGqmi4obvNOmh4QxayrA2oYXVhmGk+F03DN5FlbpYzvYQ0CRlIcL5cRWeZ4jhOdMVBEzoCo9x3RlKLEYsfGN8kaBR/tCpPv7Y+++e/M2796FBOR6VXXukBrKZuRmGpUZMjo1ILSS2oVhceI+WaJewvcA7Voald9WG+ySYFM9VJvHEk7JQ3PXMdnpQIHUhwjF2gkheMzyw2rEqIorXDO+TpEooRrSFh6WyH+AHn5/9v3/yjdgdy30G4bwIe6T2mHfuPIjO7Jl5LK2KqJU973MjcR9YufdiSzXYxaCljCfpCxhh2WnDYp7nRLPrKNLHsxUalGAgBNIkChHOPzOZpIKQci1EOGdrQqEVrIqYKddixLJTgLAyANkWJ373nZJN4hmQ1jBQYo/UbE8GTMKw1IhhwCWeTwLvJYqJZyln3vKOlWFli6aaAmFQKVZF1Mygj0rq4Oo9ky8gSKoQ4Zi8iQgWmQ4wsyoijhzvlaS+l76AgBrfEDw65/7lBx+tDl68d8796f8sG9+BwNdYGWHLq9DARcWASRCWVkU4ihFRpb4PqgwPkJsqZUGXdocMC8WIinMigkrVPuIMmHgkV/4yIAspkoUIx72PwH7KeHDZ0oRCS3gGzWR9ZUTlG9frTGf7PPiiys/+hf/ITf83Zm3aIjWQvWXAJAhLg/sLw4Vo7Z4FBks5tPoNxYj8WShGbDJtc0tJNaOeYkQ8UqsinKLBs3aLufYZdpp4bW3/rvITzyqeNyr9InzfOyPvS9jwk7FJd2OwKiIeLe9fJFb7F+DJOfelsGx9w6xktYLvgYyLxMDWUsGfO4dYa+xvFXxmuSZ1UYpn/VtSb40l/ectMRaetSsFn1NuSdE+qhT8OXONhkliKf+8J/+sevSDXKna97X/5639GMBewXdfajRNUDoo+DyI7eS++prfSLygMDUDTe6Lbwjm/uC8hUFmW5EYYKkKLVbGiKVVSHzv8XISKIQz2PCW1GfuSP95S4z2dl2j4DPKLalmYlJEihcNv9vY78p222CN7cHa9wspUMTPSeE2yRsFnwuxm1xXQ7R498eLhQlE6lnZpql25xkYH6UvRIkHf9D1yqe0JUIaG8O4TuJFz/ZMYTwZe9ku+d6j2SWenc+y4q+lLEZoG2woheZnbSVQECtBqn2c2aIpDqnz0PoOkd6Xn/yfT/Oz6ejTfT4tfBr/V9qF8z3754iGlUBdEmMgz/6fe+zEjfidtNuPdbcia/x4F9vMpiN95klsleOsiJhKG38tUvsjkq58ac4p8wfpJSw3s5PUW4s43/GQ/nPnEmvPFp4N8ZJ6gJoZjl8n5VZ3PEPTR9sATx+/x/BJNYjNFk32v8N7Qq8Y32Z2btDCnccTeI5Nvx+0bhGd4vl2cG/bkqXQ3Y6Mfk28ezp3jKHGDZM8Mrdiu41R0dxQCE36sybDk/pws8oP6kj/uXOI9sGxPs4XiJfUsz8YDOfzLy3SB4HeQoc2TlIN9rJNg/3v8J5QA7L7AlbGVX4Qacs4w91YmfAYY8D+5M7vPi2/8bZAseO+nZ0SChE190n0lDLuWpyGmQuTcyjgh8Egia2kbsQxaBIuFjogXewbm8+9QBvg66QeqOY9mz5aBwC5F+Ik5WDITsGfN8do27po7oBsqdt5NP4dy0Smr3NQ/F7qC9n3a4sQ2jUUJyalhEKE44zd6GGLpkwxkDg/R0ONhym4R+wkdUeNwzXDxdqqCEdHMlpSb7XG4Oe3Sb0UmO8gbbQ+b5lZFy+pJmqwRVO8aNuiYc6EDGuTT2KhMHHOxtjkxlD9v72ilRBjNe48RsK2TtdTSiGCNnz8aF7NjAkaHp5Bc8q4IMGMWTthNrXdWOuYht4vmbwldYOL3/G3ST0oQEcmbbR2amiXx0nKARHejXGisYA49bltrb2XSomFiWPCcxFCm/s95TRQXfnfNasm3mJhtUsotN3iR9tkBMzA2RBxkmtBgnvFRlLPpmZP5HDR2Mm+h20o4oWDk2UjsRSY7yFtNLbVWOIfLymfqXyPcaJ1YGtsH4lCxDCLAs6YsLYaom8948+eUyHiktLPSCnpOTfnd0CGBxmoaCRHz9F4w6KPbXjsJOVMz6rgBlaMaO1kX8M2FPGSeqs1VkV8G4lOMsWIdNFY/KW4Hy+pV8HQNooTrX2rMf3qnfTFGrXKbAKMpbMhbqln/PlLUlphoqRCBOMhacK7MwM1S4iSJadDran22knKmX+cIxIuJ4PPC54L8ZKyET+1I5l7JDpSFCPSZS3w/d7S0JmNltTvV7ZoihPNs6iHfucW23ra1O7c/7C6jdNJ4ftnrimTXHMoxExRZVhY69/fVrccm4pJ3mlSUoErS3R00kdzw3kMHrI2knI2NQOYYWNtVYQz3BHUntRbrfF8vxyJjjLFiHTRNCBYMVEoalK/X3mmxon2Aa4hfWyLbT3Nlsaenda3ZLpmbNsll/GRuawX1vrJdavyW2i3p4vVQ+7B0m/R5DD7IZeXZO5JWTHOdUaHVKy9YNm6LV5Sb7Um/efVGgkUedNE20AIg9fxIrEdFxO/wsfCli6bO38GVkWE0x5ybaUQsTPYzh9rzHaf2guLEhbG+9Y57QgyhpVnkPVYaAPgCgoR8rFcJWZwxEZSzqZmFkDYaBsYG4LBs3hhqzX5SDZ6pf/sJURTm4w2etwsE3+fbNEUJxa2Z7jXX7LY1tNk6QsQlibI7QsaeB/aN9R4XpMm7WoJS0XtbaGFCPpQ6ZLD5O4i3ZulQdLEcjWPjpWNpJxNzWG3YaNpYGwIDuqKl9TvCkud+pSRHDTiO4mb1IfD38L2qfl91xTqwyf11oVz3GofW2vrSWv31rd46G9JRYiuIf1DinLDrQy0CUvdeq42+FyynNxXlmWJBrGuWH1YU9CykVQPaWZxho2mgbGhuAfiJeXsT77H65F8X1PsjRstA0ScExE/EoO/DE6ET8rJNnNdmx1uqaAiqfYzYK2+B0stQrSGrI6wsMpJm5XC38RJYOWhJpa31LIWi2MlxaMQoS8no1U9Osv6s0t4P2ifoWEtFhty2hrEuST1ftJ8j9cjOZjAsu940dShoZ0eNxID2KwkjhNrfadL7WRNzx5trJ3/cCm7wosQXffebXxO0y2UtN0Pha/04l2fNhQwjaEjqzfWliZyuKmNpBrQZiZ12FjcN5UzZOIl5fuB7/F2JDtZdHLiRcsgCN9x3EgdFEyBKXxSTrYJ5dLscKur42Oo/DPQ4vZL3Zz8n8FasSy2e9vXYL6l4G+n1PMhWhUTM5On5PvNHAYL9cdSo4WDivUn5YA2L9+wsXgYE9u2xUvKAXC+x9uRRKEoTrTMTGaf4fiRmkXH9xo+FlePuguzl0uf2dluv5TD1iZHdy4uMUB23frG54d5KqE2/MlovzU0+k9pY20id9EoRNiIpR8Vq2z0J9VsK+6FsJGauTkXgy1xwsHVeqJhb2++n/DRsipCwxYLOUeq6MRql/CxuHq01T+cXsvzJ6WFH7jL5X22M1wck3DtXYfplkK/p9K3ZWoxSTd9eOYa0W/0EN2xsjqCTrP+pBjQrni+BI+lomSLwZZ4STlrku/xdjTMoGfmVX7fqXMU9VNEasCELZrCx/os3LZvrqHAnULl2zLWt1/qpl0FYaXfrsm1VYAYrxZcVbQxOnkuBsvn2liM5QkJRWGg0F6sDERKf05Ex310a7ktmRaLM0xyWF6vNSkb+gya3Y6GgetGweeQUzQMJPGdxo/EodUt+mHhwwCYfu32S7lNXtsyIzeI/uSXUgpzIT0KvV9O/Aa+wmSS9OGsJSOo0tmLhS1a6DjrT6pl37kssdYSDYOdY7GPfbykLE5XCv682qOl8ctzN5/vkwMP4+co2K5mm9zwsTJpq0SNL/zlNv5w8L9l7f1za7orPS32f6QsBNsNO34HX+GsL5lomEiUrR8C/X22zrn3gf5eSOfBV5s1N7ZL3N/UkudEjbqVc+5dgn9OSTT/7q8p/fDFmFLeD8xysmPnnPtZ+iKMe3E6ihGPvEejWwvOuuW5Gp7FdlLOlp08SF9MQM/+XtuxJUg07bN54XS8j7WrfQHnR4F/9qvv7+0E/tmabTN77lnwiWeyfuz7bDupDywdiy1ZdCfV4DCzOcPG6hJl7oM4Sd3Q4rl+P1r2KWc10vxomFTBgYfxIzlwwmqz8NHePypB1RmUzG1G8MG/55l1C00qJ7sVEKshLmO8VSYa2u+4geVCeURzQ4j7S29SDWiz9UD4SO5pPRUNsXhJOfDNoNmwaGoAUzyaHg3PWrZnip+TcFuadlL4sBJTRrcAIX0PhA4FCGi2Fhx34WyI6ziXV+55DeVyOyiq1GiZgdnHjEzdSTXIktt+sBpisSPEgcd53A8Mmg2LpmIEs+qnRUtHZqPgs8g90u3oHAduJWPhTL2c5FyA2Pk/m8V2N8qwFJ6wsOF5exP9X5kwIUG5tYKbhISJ1j35GLTSnRQNawbBwkfLANkYzKaPl9TP/xwHG2JEUzHCMflkdE7+gFVpvEPjR/qdyvsxfDgrIr5cCxBHf/8wyxvaLYTbdgcl7STNaMPJxOp21sVge6b8ohGVYL1JNYCZWydFQyxW+il+x0vKDjODZsOjrRjRKPhMLEXDQBTbM6WJ9GAKE3fCh1nsceRagNj7dqr0swAYohEuQpwUrCa0gjacTDjkXjlmyOUXbQMfjgew6qS4X9imK3ysbj3AsyBOUh9czbkfw6Pxncx2P8OipRPD91XGd02fLGz20l9ohpaZTTA7+ufr0mibGmWqFfwO2ZJpOMmDxEuO1bGSYjCYkGc0dKi6GIjWm1QDmAykhI/FrQdYohovqQ/Xle4EWYpGHKJ3P1qesTw34+eooMNKWzl8LK4e1ajxbYwc3hknzn6AYRqKEHt+O6PwbpeLlnY8LmDJd77RNhOIZed6k6KjxqBXnGicbX2PdAM656TuGNB+GB6tmJByPdJnB3QdFHweuUfD+5QtDMOGfaLnqfw9mcPzZ8fWSzBOQxHiqORdaQ0rHuVC0UwxlgvlG20NcGbF60yq+4RiVPik3pInBM4YiJfUBWjOHBgXzXg/f5uDglnyLdrq8aNl5lwOg76aom2VuBULBYOec7N35++fgVNYp6UIwSqzaZj0IxctbTtcwKHV+UdLR9rRwVKbVB01vn+7311IzPqMl9SdBL7LcdGOZ/RbNBUiaKvHj5b9hNnGIXyYETlcuwrC6opHig/IjYai4Mmdf1ca3pEWsTOEbGgDKCb9cCPxo6VBxmxovUnxkGYGtd3vLjSrnVztkRhMY8nxuGhXUZBwX5QVIpzfWkT6M8k9S+kv2WOFUtjspL9QIxqjYwIUH87PriOz1rOzUNDGTl2EWGS6hRrvdbmwKkIxZt+UES0NE5an6Uyqh7TFTo72aNrLfCgOYI0XiQaX9J/ZWiwMmDSFz+DS1nHhmRk/ms5Xo1gfNlqKTFqtFAx4jv2tll586Ot/f1r6/ZhmpWBSiMRKiO6A/U7ZhJA5mIwpG4uTNovB4GAZ0bKNC1VhnUk1A6Hkwa1Ysdjh4L0TL6lnEzFIOj5WBlBKLUhoaS91MTgdNydFnVUGLcLG4plaKVS+/Wjh2ULx4b5+MeKU6ezynGnZHk1yO6b+faxthepUloq9uUXb5CJ0sCqinGykbzZPuspPvk2q2YAcXB0n1hppbNUWLxKDLhyoOz6WBlQaBR3jVDkpnUHNmSzxs5b+kjso1oeNxuKipMqdPxPNheaD77daeldKu7SN39FgH6FEtb/fpX+TGs6EuHQfWy9IMP4hGy0TTXABDd5yomH5OYOQOpNq8IX9rsPH4j7IDKzFi8SAGrN9xsfaAEsJZ0jslXZYOPAwfrRtdcj3HTYaf9cSNBch2uLD0vigo6RrE0O0TEbEtzQcSv3FF62kixCta/ex1YIEbTjZsCpCMX4cZUVDMYLzIvQl1UxqClFxYnGLplJmWUtEYtBF+s9sMdaKEa0ct1k8KZsV35fjZ64tmrYyoZ0cNgxE6CxCnPx3s6JYFMytVapW2xy50nAexBelh53f2vrV4gQ82nCy4f2iGLNTy4qGYgQPZH1J1QhhiWKcWJslwvkC8SLRSGdv82nRuBXQUEtlg1pzonU1RIutVONH26xhVpCGTcmDsNqKEHs/9qCp+JeTW+M6nJsiT8tWTO1vUXM79Na1a3tn30IfSTZMRlCO2allRUMxgu08dCVl41TDDJDcYnGGiIblyLlGYnYTkxqmxfoe5pXx3/LRyCCl5c/YQrTtp84K0vDfb4m0FCHa1Q9svZTGvck+2mbAl2KpqMi8NVIMvDdeZOVeZtxLNponGxWPZcBlRpr0n598nVQDYszujBMrjbEWAy3xchL6ThksnRbrxYjWwlhnS+OWBNfw3owfbTNDWUEaNpq3X4tlJTzZ8OhnLlsY8MzNvbGdE0WhZGp3budpmPjbHkptaWD23k4aJwPPGMZaZcOqCOW0VGhJ2khiexZdSdkoZfZ0nFjrVHAfxIvUsmVWPE1LLsWIlvaixM7ISoguzZ9nDtGwWriP52nYWGsjzbEQvH8OFCBUuHVmRJvc2h7arBSNsR0MTb7oG1KYP0hf5B0aClGl5mSs+FYcZqeWG0lDGkkkXVI2SLU0zHKKxS2aaJjFi9QggPSf22o0DoSG0PjZSNLbg3zxHdW10Q4JkzfiR9t9wUqYsCllVmQt2Ma2suVLKYb0s0vduiymRtFZELn8Loe2gbQW1xjzko3W+wIey4DLjNQ2Hi1m+elJylURFD/jxNr2AwyuxYvU7CC+0+nJtRjRtRQoTOwMFyC6aC/FjcaOKoMXYWNtJdQU0udCWNgqpSRDnyFWZ8trUvm2hpbVbEd/PbmsBhvTv9D2DKoUFaZKDNvRGaDlwUnSRnrwQ/rPT96ScsYYxc84sTbYxtkC8SJVmOK3PT3SkwNSa/x9ug3YBt37v99aYWd0DmbIx43WmcGsHMz/Ow5FckumS2FwW4ehRWzt29topmkbpi++DZRj4XVMMULb/XzvvAsSNxonmxTrhwv/We2cey9wLSibtkMCS5fyQZ1jI0nas7HOduWc+yh9ERmT2o7CWkFMkwfpC0jscKHDWHfuoXvviWPnmSc9sSI2OlJxaVxVuHDOvZO+iIxInaEUW+XOz4efpS+k509/D68LLLRrMnQ28PvOOU+4b9mJhrbbs3/G7fi9Oefv57WS536t8PlckhdHG1o9ZjKWG8lGB1ViPUk9cMlSxfDR0OAag+0n4kXy7BC2kpmXnGbzIwxWRcSN1sE3Vg6GTY5bNCwMrJ458l4TNea7KuVMlak0nX/1xV9HSYfEj90GVsvWPLzLZcMqPQM0LS0jaSPZCdO0nLj0pJzNzJ7ycWKtMaq9A205kqvO+F7tfnfQiY5s3GhczcX+0mGT2yBrZXBCFzNT07M6eKtJexC1prbtrtC24pTxA+mJeo2C+6XkWNoxomjSNwqRi9RDmgOM9SR1J40Z8eFjbUnuUsFnlmuk7wXpP7/1MGCDLgal40Z6oOIaVqyHTU5bg1pYDXEth8y+C+2mFKyYRXzuo2grQBwyO4x6iqnvRckJB6wWlw3vGwMYFCo7UgMf3Hd6kvolzYs5fKzN+uMeiBfJwTVWPc2P5BZb0Get4J7MNZpnAfOODJecZkbmMplno/i3l5Mpg+mltkGWyrZgap9dG6Wr9yRMff5J9ZHpE8lG6xac6LG2zJOEjdQMCO47HUn9gmZFTJxYmsnE/udxI7ldF0Xm+ekf6IyyaZqZmVu0rkLiHRk2Gg8nH6vKsEB1MtZ2tWZOe6yEQlHt7z9tW5UfCzsHYow5z0CJgk5uz2xr4TdkBPv2lx2p5Uvcd/I5CbycmSUQJ5ZmzVCIjBfpgexcZm1Kp4SBANxHcS9ejop/Z7wjw0Xz6pehFspma4cOWzfFMWcgNNciUePO7VTNYxC7DJ5Zscx5DqZeNc54h2ys7RhRLGYpE4kXHvedjkjMCmSwMnwsbUHA/udxIz0DlEG0MGFgBk7hjM2conmwjdUw4WJ9QKKkNvOed18wcwdCc9mqqV39oG37pXs5KWjPazP3IOjUhWlWRcjG0iTNolG1KztSB51yMJ98pGaL8XIOH0udbX77cSM9m4rfd5ho3T4G6TBpI140F/BZDRM2VrdpqAouRlKUmKcKVNC0qOocPq159cOY34LVZ1hoISY7pZqEwPiqbOhDGVLSjAvybaQOdtkq+LOXHqkHtfSfO8donuHZx4zPeNEwk41iRJhw6JpNq87sy7nbIHJwdbxofmeWOgAdI9LbFk7VZDKQOjcUJaYJ1cdeSv9BBsit+HAtW2Z6B1nZkmoiAn0hueSwNWNR+LGUndT757UYkJSN1IN67hJLcjlWGqjM+IwbDR1H6c8gp8CWS7P25hT9cx5YkYzmVREcXB02motO1yyNbSeTIkf/XTLAdF/I1cdSYwS3tNsu5V58uJZSixIhJ2fEXmnCe1w2rIowhgZP2ZEYvOIhLR+pfSiZ6Rk+mgdW+ih+x4vUlnt90p9DTtFQXMIw11YZT+0U0U6KF80D1KxWDxeLsyPZxvL+d7opdDB2iND3j3T/ovIrYx79ijHGrN5SUlEi9FmDsbc2ZvcPuUg/szAS+9ESiYY6jW3ZSD6oeUGHj4ateYZgcC1uNJwbwnccNhpnJeJbt9o0Uwe+OQg+TrQUba9h1XC4aHgnjkH7eFwOrJb4SqxCZqribe0nYLSFB56Fw7IrYCuz0BPZYrYD6AfJRvNkE1zA4SplR2ovVfbDlY3kbNsSl9TGjtQql7HoaMeNhgPuaFOEDTN89Lu39dzUmYu8K+NE8/J9tjEMGw3vxKFoH83LruCVhLEPOj8F/i0tOkWHLSumg+Xo+4O5FediPRtjPS9Y3Sj7G4AR3/m/rp1zvwtfC+T8ITSQeXLOPQj8c+Hck/AMii+C/+xc/dPAYbe1c+4v6YvI2IuS5doL59y/pS8iM/9r+BDW3DX+2XutPfM8cRCH52U8/6N4dcTOOfej9EVkYupvL7XKP0PeS19IRj7739JO8W89lLU7D36m6FN/8vfqkAG/tp9ZdX6HHyJeG76Wy29g65z7GOnv/SnSLHrGuORYGA9BD9W7siPRUOcAY9lIFiL47uPEAt41caNlti8ze8OHrZp0agbsYTx1sgdnK8WJ5m172NohbCysGK1YARU9B3duH1koTA1V+UFUtjEiQ7IzuJ1Zk+DZGGMWPduQy4UihFEsjSs3UkuZGJSUi3RHnIHK8LGwJDH0wWPk22hYFeEcz/cYsTyrLVdDChFfZnT+aZvHieZ9tTkjJGy0D7xRiEifkx+YfVT+LLim8f042tNkag7+XaP1/q8Tb1kXukjJM10uWu9pXPGD/66DWPcAACAASURBVKv2xhrikTr0loeFjFcnP3s6p5lJWljYvmXNktWono0UpTDNg59tJV1Mxll1Z2um1qeJhaSK7SyieFE8c67i0MWgpv72UmkHldmaKa0Hvw3aj865X/1/9tzZeuig7BlR+z5zm3fSFwTz3vv87P99e/8fOkmt8pMVlwLbFC4C/pkbnulinpQ9uzFAW4zgR1MuiYENOtlyNgoGLClGhGelGIF4GKTOH8UIHYYWItyM74sJG3FITcAZYknBPijNz8p758wgrfcXxkJeOsWJU2eQ6xCpyFX3svD3CfcIYrt0/z/5+7/7Gwh57zf+Pm/8vS45LrQMuBUqfV050pNtMcEPA/43yNeT0CAmnWwZL0r2HWclVnjSBaZ7VnSootM88IIwPvj3JzN/5Iw5aHbOLHzaSXFoaANdQ0c6HM0rYChE2PDOpx0k/bX337/2+tCngX3q/rOdyXnQ6MONe7N/798rUjSdvn+tcHVPyEmSy4B/LwzHqgijfmCWctGkBq94UMtYK1myTsM7PO3FCAZZ4vqs5LfdYiA1Hqv7XOdg7CDinOce33F4L4rflUuFAzSWaS06jVlVBd0eLvRnUm8vA0jo3/vW+/UPncOy52DinRzGGYz6nlnKxXoRLEbQyU7vScn2BDxv4tC8TdOKQZboNPy2kcYH3qEixhYiXmf8Liu2T41C83OSrR3C0vhdU4gAAJ1CtKuZbCuDVRFhLNy5qNOen3TtkPCj/988hljUwDZN5ZKqIDYMTIrQcigiK7Hi0DQrvo/ZCvFpG3ippS8gc6yOSGvKtirbGc9l3pNxaHtOtqT3y87NZ4UrYMZs7wYASGtuv6ViZZQYreMMlW/PD93CT0LtJ8OMWdXT3cLwVz/BfTf1XNrvGTQoEqsiyvKbwo4ZwnmVvoAbWBURn7YtmhzfeXQfmIGVzGribOY528TQTopD68w5rR1pq7QVnShEAIBucyeB0CaXoXVVROPH3v7tnPuPoknBrdqPBf/lnPt55orNd/7v8Zf/e46qLVCMKJNkx4eHdVpaDq1uMcgSntZqe6Xs3suVtoEXZnWnsWXbu+jWzrk/JzTSP82cAMBvKLxn6Qu4glURYb0KTra6ZkchAgBUm/seZnxLhtZxhl2v76ClGFG58zjwX865j3f+ty++2NPNy53/z0f/9x481sw2TeV5EmyoV3S6ktNyaDXKs2Zv5CQoRpTpwZ0be+w1H8d2QEP9mrmdI35D4Wkt2rMqIixt78Mt/R4AMKGeMZGELZrSe1H4zneKd4VofJvk2uSI9vPc3Vlt0m4/tfS59Gf9tfPf3/xNfT/uz4AMSA5cUDVO67PShzTyVzFImoTGLZpY/ZTOz7xXg6v8wPXUQsRTgIFvjZ0Y6zRuVcmqiPA0zZLczHiOAADSmrpbDO1wGZre912XJplIbyW1vLFd5JNz7p+d8yPuXevJ/2/W/v/zf/7v0ffe94duTrCiGFGW34RnhzFIlc6r0sFg7oEyPLIqIgmNxUYa5WmN3p8TV7V7vM7ZUmXuTHfekXFIdwQvYVVEWC+KVsCsfLEYAGDD1LY07TYZ2rZkdDdWRUhOiFk55/51YVzmxRchFjPbyDv/9/jnhW2cHvzf++o2VRQjyvHs5Ds+DFKl86h0JiDy19AJT0ZbMWJJESq5B38fcH7EPI/+kLk592+Ig/T4HsuwZFVEcFpmSS78WTMAADtYGWHHJ4U7A9w6K1NqosTySnvkkx+vCTlRZ+//np96//mD/1wurpCgGFGGVwUPygWDVMk8KeqUoTzce2k8KWyIaVyNVYL3SmcIWVD5BvSvAf5eISZ8cF5EHNqelbwnw9NQnG+UXAcAIL6arTVFaOzz3DorU6IY0Vz5nH7yKxVitItP/u/9S+8/b1dIfFPwoxhRhruHhyS6BqRxdSkUENmK2Z7JaBvwYP9zWT8qbZxr1raNQty3IVZFOLbcikbL9j3OnYtWDF6E9aygn1P5ZzATr5C7Z79P+B/SFwIENGW7JbZoSu9F4dab9Y1JTZfOU4jtWnvkp0R9xY3/Z3U9XBq7+CHBxUDWT0p+sBQj0vhNQYfsFmZ9hqflM721PBHhaStGSG8DiLfDUilI39Y20n8M+PcMdf9TjIijUrI6omYFWRQaCrG7mefNAFa0hfyd/+vv0hcECNHSBy+Jtv6vuzP+ITEO+3ihPXKtELEa2W/cd3LL9kKR5r2/tq/6TI/OuS8ky2honDv/oJb+LEqIppl/10h/RrlGg52Cz6GUaCs4LhR8JuQtnCFx3doPSof8vEPvuSp9/+QYLbMXeU/GiXQRb6PgMyAkRS6973hvkRwypS13UHDdpUVLe661vHO9qSdk1xeu4daY8NRawHFgEeNSu/fvNhvbNOXrk6LZkdoeGrnS8n0jPemZGcvAs4xxm7ZZIVoK3zj78drenAVb+E7j7xG2UQm5KoitzvLFezIO6S2als65nwX/+UBKlya+sSoapWI1XFqvSnZ8aQ3ZFSL19fav5yXSitx3/nDse2MAK/+9df3db6IYkSdNhQin7Fpy9YuRlRGIQ7IYUTEYnZymhtia/c9Veu/fCaVvkVj759O/I3UaQ50VgbikC/a8J+OR/FyvHRAJ5OrSdnc7P+AFWDZ2Ao90u6JE2trb984Ae0q8RWh9YdLLOvI1fLxTkDldKIZ8bH9v3yvZQxXhaCtE1FSNo3tiVkrxJBtEOw5sTE5LY6xynBWh2YNz7l/+/VDatk1tEeKvzlkaMbD/vw3Sgwa8J+ORWinIgdXAG4pysG7sxCrpdkWJNE28XQxYFZm6v97vkz9NbCP90zn3XS//6yc/Xyo8/3ynmLe98P9bO1+M0PSlYp5flBUiHLMyo3tV+J0jPanf2YZtRZJ7UTSJ4JGBGBN+HrG3p3WpihDOT/6gDW2DZFuU92Q8kls0bZhsBfyNSXEoDVuhpqdpMt6QQf7UkyX6bd2QReKDf843vu3Vd6+P2S+ULB3bNGXj1Z+QrrEhUMLgh6S1wsNskd47gRkaK/ZJFqFl8HPIjBDo8eD39txneo7Twjf6UxQhWqFXBZW2eiWlB6GCBO/JuKQGJlYJnzOAJtd+cydfoAdKwcqI9LSMeQ1Z7fqSuM++6F3Ta6QVayd3uf9zr2/ZL8y8c841FCPse/ZfvsblkQ2zhqL6rPR7h4yU24Ws/MAm0tNSjNBY/MZ9H/z5CfsMVi7WnYL8vxMfDvxbhE4RHdu4Um+pteQ9GZ3EFk0N7z/gIvqksGzsuSdMIElPQzHiceBq19Ttk34xIOY/f8pEkJMfu+xafK9ouQvG+8PfeFoGp/pYFRHPi9HP99KyLoTxMdGS0QUdcVEanvePFJrN++DPkzi68/dpZbl55d997SqI3wUOUH/lGWjSh4SrgrROEsqNRB+WcyKAy/b082DY2IFuK+1mhLNyzv068H+bun3Sb9/G/OdP3S66f00LVkbY9Oqc+78Ep6PPZX3WpWYr5d/9NRav2ZLYgx8rPwOZjrgc6d9QM6IhBv3e+e/zL1/oWiucod+4c8Hk4Jz7r59tnnIVRJ/2theu2yaYzch7Mo0ngX8m50SgdPcmxFCoRylST4SBrDGrIl8FVkb0+24xixGXxniH9Iv674+6LUaMXZYEOX/4SqzE0uQxljyko/mNFU244kPEgsQjW06oIDkIOvTALtj03q80+I+/z3Z+4D3lGROV/+c9+vfcyV/Pr0oGAZ+Z8W7aO39fxSpIbHhPJiMx65DzP1C6e23QLeNKADLT+DbH0EkmEv2E/rXF3NLq0ranQ9pk/f/N+x/8vzgycKzek//iNWzRMQSrIuJ4cuEPzURe2kMVQ23jVfuX6pD9ERGf5DtgQ1uhGA9+9UF3BcKLby+2jcn2r6eR92Vb3Kh8A7/2aQzMJo957gCTDNJ43znIPVRxd8Gs+eRSvgsripDA4CLDxk9sAICQaoFzI8YWIpxAe6E/wSZWQbhdHdIfE5p9WPbWOfeFqMzR4MB+peBzyzGnDA5LelTwOZaS/cz9LGveDSoj9QxYKfizEyKZFJ0L6T9jSTkFKNo3vCfFknI7uZ2CPy8h0hlaMK/881X6egkZkzFbjDUKrrfEpD4vtZnwLJM4ZHvRu4Yxk5sujc0d/N+jm1ufw5jv5dD9/7bbNGk4mRxfe3HO/WRkS6Y+iwcrW7Bkn2qM8MHvA78dUdDsHw77ccD/B2lJ7OffsPUICvcaeVUE0nvwz7Wj/26HFu+bzkrl//CeFJNqZcRS+IwaQIuhv7kTZ0fAoDFjLNYnh1qVcoxxOWFFhMvk2ffejyN1c+1z+GnOZK12m6a940BKLdpteCwv16fDHl4u50RY2WYsJx87gyVPF7ZU6W6VwhY86KsyefYAc3Bodb7e+S1Ffr+wFVmr6bwrtW8lhnBqtmcC/jZm8urGvzd5XgII5YNfBRC7X/o4Y2xcYhL5NwdDJ/hnTj1C4KvtTLtnRkBOu8/WJoPvYsGAZnCfXT7nRDCYI6vd449ZfnY1CYsD1cRZIUBOnhIOSD5z7oCodz6ckQTnBxV4/wFnYwad2tURTHaFFUy8smHb2T4ptLnnZH4WGsvtfxZzx2Kfe3/P/ufxKdQqFbZpkvXZL22pfGUph++BVRFhvWS27RUrI+D8ff2Lf/49S1+MMam2aWoLEQyMomSvid/BFOwBHba8/4CvjO3Dbfw7FLBgTPuLwoWcd/7zD7lVVuXOE38PMyejSG7R1H/WzlkdsfYTzNs89f77jxPHIxa9f//8feff9P8hiKMtQPyP34ssp+W/NTOug3rN8JyIEw3T4r34F9hm5HkWOEvxeVGIAM4eE08Uyel9D1i1DnAWyAuTLZCRlwnvJ86OgCVMmLTjve+nzp2g1xYhjn4V15yVkC/CRar+/dsf+J/j0qSsKWPY/e/r2C1G8AOM48U594dz7v+cc991ChA5djhz2UpIiyn7sFmQ458Jw/ULbEeK4aM8RC5IUIgAzp4EBlJ4P5bt2Z8RxjvxvlirBFf+/JA5fvMTtBrn3D+ZhIMMTH03bfxYCKAZ96g9751z/+ls2zRU1RmPDVGEaEmPg/YLISGLEUe/NVPXezf+z9y/pq+ueemc+0Jm5+Bv7lWiw0O0qPwAo/Tnn0ukH2gxbRR8vkTXfc09MS6xZl40vsER4hpPndUv0p8XIWNzEmrDrRT82YlM+rPMdgquSXNibAsb4vd3qYBJH5tYz5x+Ke81oj1T+lXS10y+ztG3mx79M6fdYmjt/7OtH6eN9c+Wtuhd09CJ748X/jyXChn1hbHeMX2l6sI/56siUq3gJrKWtvDwGLj6ZNGlG5lMS05bd11Co7TMnG7s78jzY3xCD8SsAxaU+40TfvPEWqTOv+p3JkgZuTQQ0ii4Ls0JXZQP8Z66NXucSRfEcuaOc4Sa6EJIjEwptu0VXDfRES2TiPv9+CFn3g0tRlz73w5ti/XbWBcLOLwovs3Jf8gb91Z0SHWAqBWsigiXQ+ADeTSi8Flmbr0QKUZMS4gieB2hQX3pupjlS6xkF+B3NYf0n5+kz7V+BW3r2wk1ESxUoeBW/7Cin00MZy4K7URzpmx/SzGCfLkz2TK1/m4EQwoFY4oR18Z8h/x++u2fi9vglr6dQnd5z0LRjaUdA4lhoulhFhsd7LJy72XIzPnpmTqDu470zr+2xz6zfImFaHgPM2BZVm6thmWw43bmTuCpA27bMGRVMwOyxGJCFeh5nhGtmbItJ+Nf5IvTsyrCXZnwe69QMKYY4fy4Q/9/f6/vdGmc5+JvrsQ9Lff+Q2W1wzSsigiTU2H3ILOky8q9Rh4d9Hk5+hf9vUGZyv/vYv3+7jVG6IgS7dGw5Sbvx3Jyb79dBjvuZ0pBogr82Y4pYvL7JtYSattCVsYTjZm63z8T6YiGCUx9/b728c41ji1GuCuTpq5NRrw0Vvz35I3vL1x8CV6cc7845/7hP+zNnX0+cd060An0pVsVdg+W8qyBc78pOdgpZ++cc3865/7rf1vtWUZt9v758l//v/sx0nWs7xyYda2hAmjwm5J3k4ZrQBqbO+/HoQcQluz9iIL8wr8fj865XwNew+OI72rlnHsN+M8GYgv1Tjr69yygydT7m74txrz7U+lvi/0uQv/7UoH65ytFjO2FseK/V5N8d+H/sHfOfZh9iTq9uLfT1DFfu/8pxYh5firwnqydc39JXwSiex6x4udL5GtBXE8DZ5UffcMI0GTo/ZtC45z7j/RFILoX/13f6sgunHP/TnhNOXjy75l2oKjyn3MTqb8ypp3TWjrn/hXhWoDQXiZuYXNN5SfH0A6EFnPGYei7liv0szGkjS8OdF27z1cXChjrAZOktxf+/Hv39bZVjxcmfvzm7mxtdWkfqByyUbiMxrrSzxgJEU37zKXGvtj5Z0wHXfpaybwMbZCxrJloy70lzBLY/jL/9Dt/l7Ctif5M3WKV7ZqIhcRY0crWrERT5gwos/1suZly6Hkq1ZXzsIa0O0O51N8ftAtMjg3flB98KTiMdH5KWw3Rt1HwHZB4GVtoo0FnN2O/awqRREu0ntfEZI+8M2ZbCOlrJdczZ0IRZ+4RC4n1fqQYRzRk7hbZjGWUGQvbqTZX2hgpxsWvHXI9uPB3qZJiNRQi4mDgcF5KL0Q4ClpZZ0rjjsE3m5nyXbM6gmiJ1jYiv5G8M2YmJu1tnQmxoooZ4kRzYu6JTzGOaMjclT9LBX8Gkj5at2fqu3Z/biOtCK+ujOeMnviVSyeo5C1wYsrl/pCKhWpqKsyQzjNTZlLlukVg7pk6a44BNiIdzQeqVwo+HxInY/smzLzUmVBnzPD9Eq2JPY7CQC6RToiVP9J/BpI21saXr43bHgOflbe4Mq53mjLxK4dO0NxlV7iMmQzz70tte1NLelTwnZCwmfqSZoagvcxpkPF9E8nsZty7qbCNRX5hJVkeCV3IzGlHApJPUsz+5T1HpBJq5Q/3cDmJuVospsWN8dv9zKLE8sYEw1lb4VrfMkPr0nvrmMEzPRQivpXjGTUlZ+6qH+nrJ+m+a0cDngjFyruYQej8MqXDRztJV2I8P2omehFlSVWwr1glT4QSaoY7bbVyEnIlQWrNnYkPRz/Oe+/PWPn/zebOs/swt6Btedbiac4fHFdZviekY2XwQwIDknlk1MFEV7B1j42E+K4dAzBEICH2eU+Flah5Zc7AB4N1ehLrQF/6WERTUg66ce8TiYRa+ZPDjjLkfqxtz3RJ5YbvSnL04zLdDG2LBvusrDZ+ORw4PGYuTA+FiNtohOaRZYB7gW27bCTEd93irBCSKrOWCwuxvkqZnDN361juAx1ZB/pdX0MbiGiIxFYk3PskZUKv/OEdnXdy2/6/jnTPbkNv72d12VHsxmKJmL0+LRQihqHQZTuh9k9uFPxZyO3EmBnCftkkdiwWIhxb9GSREPceB73KJ9W2NQxqEelIbXXN6miSKiEnVTkmVmYdq/2HIWo/hjNnFXa7vdOkIsR3d/77djb8w7Q/n5h/BtrPGmdr59zv0hdh0HPnwBjctnLO/Sl9EZjkOfBL+mTwnVOKp0hL9xv/zuZ7Ryz/a3hm094590H6IjDZT4FWbPNulPPi31Mp2vOV/82/T/DPAvpeEh1cfYnVcSfYEuseP/DczlKoNpx2i05q59y7K/+7l84WTrsUfSuLy+YsHy6iDTOVp4UVEeOxOsJeThHuc2YF6kzsZxrbNZFYkZrlGQoz7uwmZAeWd6NMJGZFcl4MkYr0+5L3HYmdWPe41R1lyPWUUIRQz2KDCGFwTsS0UIiYhpe4vcTooFMA1ZdUgzFsB0hCR3pgJRS2r7CX0G1BBulkIvUMaQz2v4ntSJwVcQmTU0isxJhE18W4WT6xupo6S9ZWRzAQHAb7eI/PnvtvFl7idhKzg859oCupZoVanPxA9CaXQoRjINpcTpG2geDdmDahzsOaiskZJGU0vTNZCUZiJMa5d11MrMwjsYtWGMnaAAHbNM1HI2B8WMo1HwMuNhK7g86sKD1J3Tll8IXMzUnZoEoorI6wk1j9EAY60iXVgdX38J2TFNE4C5hJkSRkjokGmJk0YDs5H1htmqXGEMWIeShEjA+FiHAYcNGdFPe6tQJ4rpEa0LXU3iC6knMnolbw+ZL7ifnc5N2YJtq2W+WdSGJH49hJRUGCBEyqPg0TK21H47MQnpVKX+wlWDmjwTs+a+kvLTM1nW21STlzytr2gLlFemY5RXEyNjkXIlobBZ8zuZ4U2/rwbowbbYWIFv0zEitaVgFdwtkpJERSr/zhDDybke774g4rlb699AdlFA1dHlpasE2PvqTuoDMDVC5anmsUJMjQHAooRDj/XLQyMai0pFohy7sxXlJt4zEV/TQSOhb2RqcgQeYm9Wx33tP2oqXvizusVPpiHByXM2ZajcuJZVzRsV2TnkjNFOS5lD6aGmMs0SdDonUmcyxWJgaVlNRbdTIoHT5WVlbx3ZOQWUrf0APx3iNTI7WV9lLBn50Mi6a+L+6wUuljq6bhmH06LkcjHRbr2K5JRyRnCjILOG00NsYoSJBb2RZWiGixXZOeSA108FwMFyuFiBYFCRIimrdnuoT7noyN9MofK5O4S47Gvi/usFDpk374WFDxkByd0mZgSrPwrMk5GjrozIZK8z1rXulFQYJcSumTTvhNyEeqEOH8u1n6z59DDkZX0zMwS+bE6jgJ9z0ZE+mVP/RfdIdChGEWBrFL76jeUvNwHB3JTmfJmAEqE02FN1ZvxYuVlV406Embk4IOpgasHpSNhjYhWxnOi6Z2zhQMzJKp0TwB5R7uezIkGt7RjjNPVOZEIcI+K9s1WRhkSW1p5LvTFB5Ysjg/Im20ddDZrilO9sq+53soSBCrs5hjYeWYTLQMcjjaR5OzM/b+u4aBLjI2OUzWpCBBbkVbP5adHvREw64PCMRCJ0hyv3NtKmaZ88AyikHIdNHWgGvR4Q6bjfQXOhHbC5Ybq/dsbAzKpI22gTyK9eOjqZgUQsM9QAbG2jkRt6zoF5AL0Tp2Q1tNPkxoypCFJcJaB9dSWtBQHR1rs4ZzR0EifrQfBktDbn5y2eKGrbvKSS73bExrBd9TCdG6SpZi/bDkvDUDbWRyLzmOh/DsI/1ofsbTj5VLLqshcYGFJcI5voCHqJlFOinaZr7hjEZnvFiZdUxDbnpyK7AyAJt/6DwMR4EuXrTOtOyifXQ7BwPf4VwVzwFyJaeMZwTz7CNtLIzf0I9Nn7X0l464rMzGKKkgUbnzA5mX87icjB/qVQIaneGjeRbJJTTkxuWUcUNswfMgy7AaYhoGIsPHUt+B9tHlaF/1GRqFetKNhWLqXFbGoki8WNp+j35smhwLePbBs9IAzr2DSxFienKbNZwzGp1hYvklTUNuWEqYWV7zPMgqJdyzMfFsDBcrKwa7rPTHUiT3Pt8tFOrJl0IKES1WBpWbvfTNNwFnnsRNaZMQYKwBnNsNWvtOk5XPX1tynTWcMwoS85LDgN+SZ97VHApc5bVR8LmT6TkWeM/GQkGi7HuRAu35fWC9jTNXZWQrZRInJRUiuiycZ0rCxdLqxT5LY6dWUvIkBBjrAJ3c+YVl9QHm/OdNQ3N6SthDNnfMghmX3LbsaRh0+SpHg9tuhbTwn4H090CGp22LISw6udOSyyB2qbOE97Trv8HgbHkptRDRYrJSGbFciGhRNA6XXNpvmMlSQeKLf1ltjBzsVPkX7JaX7Oww+JEPa88cqeyNPOfGqpgVX3wRoov7wU5yW6WqDZ3c4bG+GuKaUgbljsyGvIlCfTkpvRDRYoVY3smhENFF0Xh6mISAb1gdHDz4WcOaBuwW7vyAokMZ7jvmgZUfZshfT26rIa4psbN9oAhx1YJngtrslLWzcseBttdTwsqcnFdJUIgfLuf7gJxDIeJbTE7JL7lOZGEsY1x4/+MmqwWJNgf/Alsl6jRXfvBk7f+5FB/CJ/cOJ5hZ0E+uDbZb1gXMBN1mOos3hhLuByvZc9+KaWhXfpNtYUWxnO4BniXTlbJaprTkNlM8pBInK+WarfTNlMAjz+iboQiRie8S/DNWzrk/E/xzUnnyD4eD//f7CX+PtvFcdWYvfAh0fbjsyd+LR+kLQRKNL+iV/Lt6cm8rqkpU+d/82jn3TvpiAnn29/XOv4cwXOXOv4efpS+kUJ98B7LU55EmK/8ceZC+EEGf3Pl5UGqbcOHvg4/SFzLSi3//bQr+7kLhnZiXT52JF7isXRn0o/SFYLKfCilGOD9R4tHgezqmF3f+TEq5BxAIMzCIVE5UTou2KnAmDLMFv7XyAxjS382U7BRuHWhZzTYVyXIqcOa5Fe1AZGltc+7Hr9X+/aK5nXT0xQfaNXGwnaH9lLANa0iskrCXU8HvAPot57ENxvMwS1Ngp4fIZsNyVXglDLpQhLivHXjRvE1Fuz0gB3HGReM+Xo7+d8b7V7/2d5Dz+/Hozm0AihC3Ne78OUkPTJ/8O3rN3vdJldBOzi1HfiOTtQV56e+Q3M+e9qRzBfZb2glNPOMQTKWgkUvyz54HF67IcaUEL+ppKj/gL3k+z8F/f48UksS0y6AZhJmXE+eYmNYOzOT0ftxR1J2sfT+2Wz3Gui/awkN7Ph9tGVkccG0nTLgLI6dzdHIMZ31+qzKwonFOdr49wPOtACnOjOir/AuU/c8Q2ot/OO+kLwTqLf2Lzuq+oZwdEEfjB6fbv7YzaaecPfLaOVuoPWeo/1fo0p4x8l76Qgz57J9DPIvyYfn9yP0Y16L3V+ffl7cGDQ6d72LumXtIg3PX9Hrxz2d+P2G1k5NyOWPOumd/n9NXuq3x/Zal8XPAaLshubWCyhvJIyf2y8RElaHzBA6cHQAk0XQOSJX+3WsMs5bK0H0/al05dPQzuZfcj0BwC2aNqwqrIeJbKX7flZCTYzXEVG3fxcIuNGxJDBUaOvtkRtoXFg0zhNAOvGyVPJfaQRYG/QA5S0XPZYZNXgAAA9lJREFUBOlnEQO+ZVu4t217pO7F7pY+FOaBNChKyGbP8y6pdttCihJps+M+D0bDVsRt2u0YH+lHoE9im6a+9oH/s/SFwIxX/3DdsJQLEbXb9TS+I1ZHXL777Af8Dv6FfeDeBtRpfEN6mflWTi+d59DOP5uAvqb3nqz8X+duFfDs33/HznvxyHYNgLi2IMn2TWmwJZOsqrN9J9s3xfPk3iY6IJ52++FFp71WBerPvPa2YGy3ZGQ8AzdpKEa0Fn7mHQ97XEMRAho0vZe4650vcEn/jIBDb7AFgC2Vb7cs/LPA6uDMa68IeuCZhADad+RQdFgBO9p9yjn/MY4Xdx6c3UpfCP7GmWLhcZ/rMrbdxvmHyE57uLX0MjGiK2zHBADQrvEd1k1nZpD0+7P7Ht37Tt9jZ7UXAABT1I7tbEJm79sQ0KudPCt9r1gO9zkA55StjOhqD2CxOtMQYbz4+2DLjDkAgFGL3oyjRee/m9vOeemtZGiXuberrpi5BACIbeW3MPxR+kIM+uT7umxTYwdbOI33uTNZBwDUWxV+aGSpoWIOAAAAAHbUfoCW/vvtHN15VQkrFO1rJ9Fyz3OfA8hMe8A1S0Dzz3bkXnUAAAAAAF0YpP06J/q62eOef7vPFwM+LwAwgaJEnjn6GTScBwEAAAAAeWlXTOwV9D1T93M3DMwWqb3ndwruw1T3+VL6Qwdgh9YzI26p/IN97Zx7kL4YTPLqX8wb9rIGAAAAgCJUfnC+zXvpCwro1Rdc9r6vexzw/0EZ2vu98X+1PI7Vvc/3jOcAmMJiMaLFwUH2fPYNs630hQAAAAAARFW9QdrG0EDtsx+IbQdkGZTFULW/32sD9/1T5/7mPgcQhOViRNfSFyZ+lL4QfKMtQOz8FlsAAAAAAFxS+8HZNpVz7oPg9Tz7VQ6Hzl8ZkEVolb/f6wuJPfn22Y/VHPxf951/DwDB5VKMaNW+KLFitYSY187SVAoQAAAAAIC5qs4B0IsL/1nr1uDty4Xtk7qDrt1/faAvC2Wa3lmbY88j6d7TFBsAIILGbwfEgdccWgQAAAAAAAAAEJTbyohrFn6gfMmKiSC6qx/2HM4FAAAAAAAAALillGJEV9MpTkjuPWnJS+dgrj3L+QAAAAAAAAAAY5RYjOhbdEJx4rzqoVt0OLDyAQAAAAAAAAAwB8WIbzW95FygePaFhkNnuyUKDwAAAAAAAACAoChGDFP7LDr/unHOPUhf2ABP/q97f5j3gaIDAAAAAAAAACAlihHzNc65yqfx/1lbsGiFXF3x1Pv3+86/PviCw4lzHQAAAAAAAAAAWvw/tIvNbsTytaIAAAAASUVORK5CYII="
+  },
+  "security": {
+    "adminHash": "8895064c70540622b30a39f226db1b97b9368d03866d7008113eb54236e7c94d"
+  },
+  "limits": {
+    "maxTotalDiscountEnabled": false,
+    "maxTotalDiscountPercent": 10
+  },
+  "session": {
+    "rememberDuringSit": true,
+    "restoreWindowMinutes": 360
+  },
+  "layout": {
+    "paymentPosition": "top",
+    "headerBackground": "transparent",
+    "pageTitleSize": 15,
+    "paymentSize": 55,
+    "titleSize": 20,
+    "baseSize": 13,
+    "cardRadius": 14,
+    "cardPadding": 22,
+    "gapBetweenCards": 15,
+    "gapBetweenColumns": 22,
+    "headingFont": "serif",
+    "titleColor": "#032456",
+    "subtitleColor": "#0e0f11",
+    "customCss": ""
+  },
+  "priceInputs": [
+    {
+      "id": "priceInput0",
+      "label": "Project 1",
+      "enabled": true
+    },
+    {
+      "id": "priceInput1",
+      "label": "Project 2",
+      "enabled": true
+    },
+    {
+      "id": "priceInput2",
+      "label": "Project 3",
+      "enabled": false
+    },
+    {
+      "id": "priceInput3",
+      "label": "Project 4",
+      "enabled": false
+    }
+  ],
+  "discounts": [
+    {
+      "id": "d-military",
+      "name": "Military/First Responder",
+      "mode": "CASH",
+      "method": "SUBTRACT",
+      "value": 300,
+      "target": "TOTAL",
+      "repToggleable": true,
+      "defaultOn": false
+    },
+    {
+      "id": "d-referral",
+      "name": "Referral Discount",
+      "mode": "CASH",
+      "method": "SUBTRACT",
+      "value": 250,
+      "target": "TOTAL",
+      "repToggleable": true,
+      "defaultOn": false
+    },
+    {
+      "id": "d-multiunit",
+      "name": "Multi-Unit Discount",
+      "mode": "CASH",
+      "method": "SUBTRACT",
+      "value": 750,
+      "target": "priceInput1",
+      "repToggleable": true,
+      "defaultOn": false
+    },
+    {
+      "id": "d-soak",
+      "name": "Soak Up Savings",
+      "mode": "PERCENTAGE",
+      "method": "SUBTRACT",
+      "value": 10,
+      "target": "TOTAL",
+      "repToggleable": false,
+      "defaultOn": true
+    },
+    {
+      "id": "d-500down",
+      "name": "$500 Down Option",
+      "mode": "PERCENTAGE",
+      "method": "SUBTRACT",
+      "value": 0,
+      "target": "TOTAL",
+      "repToggleable": true,
+      "defaultOn": false
+    },
+    {
+      "id": "d-schedule",
+      "name": "Scheduling Rewards Program",
+      "mode": "PERCENTAGE",
+      "method": "SUBTRACT",
+      "value": 10,
+      "target": "TOTAL",
+      "repToggleable": false,
+      "defaultOn": true
+    },
+    {
+      "id": "d-0down",
+      "name": "$0 Down Option",
+      "mode": "CASH",
+      "method": "SUBTRACT",
+      "value": 0,
+      "target": "priceInput0",
+      "repToggleable": false,
+      "defaultOn": true
+    },
+    {
+      "id": "d-marketing",
+      "name": "Marketing Discount",
+      "mode": "PERCENTAGE",
+      "method": "SUBTRACT",
+      "value": 0,
+      "target": "TOTAL",
+      "repToggleable": true,
+      "defaultOn": false,
+      "repAdjustable": true,
+      "repMax": 10
+    },
+    {
+      "id": "d-vacation",
+      "name": "Vacation Voucher Gift",
+      "mode": "CASH",
+      "method": "ADD",
+      "value": 0,
+      "target": "priceInput0",
+      "repToggleable": false,
+      "defaultOn": true
+    },
+    {
+      "id": "d-1000down",
+      "name": "$1,000 Down Option",
+      "mode": "CASH",
+      "method": "ADD",
+      "value": 0,
+      "target": "TOTAL",
+      "repToggleable": true,
+      "defaultOn": false
+    }
+  ],
+  "financing": {
+    "showMonthlyPayments": true,
+    "showTerm": false,
+    "showRate": false,
+    "disclaimer": "Payments shown are estimates. Actual term and rate depend on the lender and on credit approval.",
+    "plans": [
+      {
+        "id": "p-12nono",
+        "title": "12 Months No Interest / No Payments",
+        "method": "PROMO_THEN_TERM",
+        "term": 0,
+        "rate": 29,
+        "factor": 0,
+        "custom": "",
+        "promoMonths": 12,
+        "promoLabel": "12 Months No Payments, No Interest",
+        "showPostPromoPayment": false,
+        "headlineLabel": "Your payment"
+      },
+      {
+        "id": "p-240",
+        "title": "Payment as low as",
+        "method": "TERM_AND_INTEREST_RATE",
+        "term": 240,
+        "rate": 7.99,
+        "factor": 0,
+        "custom": ""
+      },
+      {
+        "id": "p-60",
+        "title": "10% Down / 60 months",
+        "method": "TERM_AND_INTEREST_RATE",
+        "term": 60,
+        "rate": 10.99,
+        "factor": 0,
+        "custom": "",
+        "downPercent": 10
+      },
+      {
+        "id": "p-5050",
+        "title": "50% Down / 50% Upon Completion",
+        "method": "PERCENT_OF_TOTAL",
+        "term": 0,
+        "rate": 0,
+        "factor": 0,
+        "custom": "",
+        "percent": 50,
+        "headlineLabel": "Due at signing",
+        "remainderLabel": "upon completion"
+      },
+      {
+        "id": "p-6nono",
+        "title": "6 Months No Interest / No Payments",
+        "method": "PROMO_THEN_TERM",
+        "term": 120,
+        "rate": 9.9,
+        "factor": 0,
+        "custom": "",
+        "promoMonths": 6,
+        "promoLabel": "6 Months No Payments, No Interest"
+      },
+      {
+        "id": "p-120",
+        "title": "Payment as low as",
+        "method": "TERM_AND_INTEREST_RATE",
+        "term": 120,
+        "rate": 10.99,
+        "factor": 0,
+        "custom": ""
+      },
+      {
+        "id": "p-180",
+        "title": "Payment as low as",
+        "method": "TERM_AND_INTEREST_RATE",
+        "term": 180,
+        "rate": 10.99,
+        "factor": 0,
+        "custom": ""
+      },
+      {
+        "id": "p-18nono",
+        "title": "18 Months. No Payments. No Interest.",
+        "method": "PROMO_THEN_TERM",
+        "term": 0,
+        "rate": 29,
+        "factor": 0,
+        "custom": "",
+        "promoMonths": 18,
+        "promoLabel": "18 Months No Payments, No Interest",
+        "showPostPromoPayment": false,
+        "headlineLabel": "Your payment"
+      },
+      {
+        "id": "p-3nono",
+        "title": "3 Months No Interest / No Payments",
+        "method": "PROMO_THEN_TERM",
+        "term": 120,
+        "rate": 9.9,
+        "factor": 0,
+        "custom": "",
+        "promoMonths": 3,
+        "promoLabel": "3 Months No Payments, No Interest"
+      }
+    ]
+  },
+  "offers": [
+    {
+      "id": "o-1year",
+      "title": "1-Year Pricing",
+      "subtitle": "Fixed Price Guarantee",
+      "totalLabel": "Project Total",
+      "financingButtonTitle": "Financing Options",
+      "showByDefault": true,
+      "repToggleable": false,
+      "showYouSave": false,
+      "focusable": false,
+      "discounts": [
+        "d-military"
+      ],
+      "plans": [
+        "p-5050",
+        "p-60",
+        "p-120",
+        "p-240",
+        "p-3nono"
+      ],
+      "defaultPlan": "p-120"
+    },
+    {
+      "id": "o-soak",
+      "title": "Soak Up Savings",
+      "subtitle": "Valid for 30 days",
+      "totalLabel": "Project Total",
+      "financingButtonTitle": "Financing Options",
+      "showByDefault": false,
+      "repToggleable": true,
+      "showYouSave": true,
+      "focusable": false,
+      "discounts": [
+        "d-military",
+        "d-referral",
+        "d-multiunit",
+        "d-soak"
+      ],
+      "plans": [
+        "p-60",
+        "p-5050",
+        "p-120",
+        "p-240",
+        "p-180",
+        "p-6nono"
+      ],
+      "defaultPlan": "p-180"
+    },
+    {
+      "id": "o-schedule",
+      "title": "Scheduling Rewards",
+      "subtitle": "Initial visit discounts applied",
+      "totalLabel": "Project Total",
+      "financingButtonTitle": "Financing Options",
+      "showByDefault": false,
+      "repToggleable": true,
+      "showYouSave": true,
+      "focusable": true,
+      "focusLabel": "SRP only",
+      "discounts": [
+        "d-military",
+        "d-referral",
+        "d-multiunit",
+        "d-soak",
+        "d-schedule",
+        "d-marketing"
+      ],
+      "plans": [
+        "p-12nono",
+        "p-240",
+        "p-5050",
+        "p-120",
+        "p-180"
+      ],
+      "defaultPlan": "p-240"
+    }
+  ]
+}
+/*PK_CONFIG_END*/
+</script>
+
+<script>
+"use strict";
+/* Filled in by the last script in the body, once this whole file has been
+   parsed. Export rewrites only the configuration block inside it. */
+var PRISTINE_HTML = "";
+
+(function () {
+
+/* ============================================================
+   1. Config load
+   ============================================================ */
+var RAW = document.getElementById("pk-config").textContent;
+var DEFAULT_CONFIG = JSON.parse(
+  RAW.replace("/*PK_CONFIG_START*/", "").replace("/*PK_CONFIG_END*/", "").trim()
+);
+
+/* Only faces that are already on a Windows tablet or an iPad. The file
+   loads nothing over the network, so a web font would simply not arrive. */
+var HEADING_FONTS = {
+  serif: 'var(--font-serif)',
+  sans: 'var(--font-sans)',
+  georgia: 'Georgia, "Times New Roman", serif',
+  times: '"Times New Roman", Times, serif',
+  garamond: 'Garamond, "Palatino Linotype", "Book Antiqua", serif',
+  segoe: '"Segoe UI", system-ui, sans-serif',
+  arial: 'Arial, Helvetica, sans-serif',
+  trebuchet: '"Trebuchet MS", "Segoe UI", sans-serif',
+  verdana: 'Verdana, Geneva, sans-serif',
+  tahoma: 'Tahoma, Geneva, sans-serif'
+};
+
+var CONFIG = clone(DEFAULT_CONFIG);   // live config
+var DRAFT = null;                     // admin working copy
+
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+function uid(p) { return p + "-" + Math.floor(Math.random() * 1e9).toString(36); }
+
+/* ============================================================
+   2. Session state (resets between customers, never exported)
+   ============================================================ */
+var S = {};
+function resetSession() {
+  S = { inputs: {}, deposit: 0, toggles: {}, marketing: 0, shown: {}, plan: {}, focus: null };
+  CONFIG.priceInputs.forEach(function (pi) { S.inputs[pi.id] = 0; });
+  CONFIG.discounts.forEach(function (d) { S.toggles[d.id] = !!d.defaultOn; });
+  CONFIG.discounts.forEach(function (d) { if (d.repAdjustable) S.marketing = 0; });
+  CONFIG.offers.forEach(function (o) {
+    S.shown[o.id] = !!o.showByDefault;
+    S.plan[o.id] = o.defaultPlan || (o.plans[0] || null);
+  });
+}
+function findDiscount(id) {
+  for (var i = 0; i < CONFIG.discounts.length; i++) if (CONFIG.discounts[i].id === id) return CONFIG.discounts[i];
+  return null;
+}
+function findPlan(id) {
+  for (var i = 0; i < CONFIG.financing.plans.length; i++) if (CONFIG.financing.plans[i].id === id) return CONFIG.financing.plans[i];
+  return null;
+}
+/* The name a homeowner sees. Falls back to the internal plan name. */
+function publicName(p) {
+  return (p && p.publicTitle && p.publicTitle.trim()) ? p.publicTitle.trim() : (p ? p.title : "");
+}
+function payText(pay) {
+  if (pay.kind === "amount") return money(pay.value) + "/mo";
+  if (pay.kind === "split") return money(pay.value) + " now, then " + money(pay.remainder);
+  if (pay.kind === "text") return pay.text;
+  return "";
+}
+
+/* ============================================================
+   3. Money + math
+   Progressive stacking: percentage discounts apply to the running
+   subtotal; cash discounts are flat. Deposit reduces the amount
+   financed only, never the project total. This reproduces the
+   Ingage PriceKit results exactly.
+   ============================================================ */
+/* ============================================================
+   Appearance kept on this device
+
+   Publishing to every rep means replacing the file in Ingage; there is no
+   way around that without a network. But an admin nudging text sizes should
+   not have to publish on every nudge. Appearance saves to this one machine,
+   so you can iterate freely and produce a package only when you actually
+   want the field to see it.
+
+   Scoped to appearance on purpose. Prices, discounts and financing always
+   come from the file, so no device can quietly quote different numbers.
+   ============================================================ */
+var LAYOUT_KEY = "bw-investment-guide-layout";
+
+function saveLayoutLocal() {
+  try {
+    localStorage.setItem(LAYOUT_KEY, JSON.stringify({ v: 1, layout: CONFIG.layout }));
+    return true;
+  } catch (e) { return false; }
+}
+function clearLayoutLocal() {
+  try { localStorage.removeItem(LAYOUT_KEY); } catch (e) {}
+}
+function hasLayoutLocal() {
+  try { return !!localStorage.getItem(LAYOUT_KEY); } catch (e) { return false; }
+}
+function loadLayoutLocal() {
+  var raw = null;
+  try { raw = localStorage.getItem(LAYOUT_KEY); } catch (e) { return false; }
+  if (!raw) return false;
+  var saved;
+  try { saved = JSON.parse(raw); } catch (e) { clearLayoutLocal(); return false; }
+  if (!saved || saved.v !== 1 || !saved.layout) { clearLayoutLocal(); return false; }
+  /* The file stays the base, so anything new in a fresh build still arrives. */
+  var base = CONFIG.layout || {};
+  Object.keys(saved.layout).forEach(function (k) { base[k] = saved.layout[k]; });
+  CONFIG.layout = base;
+  return true;
+}
+
+/* ============================================================
+   Sit memory
+
+   Ingage tears the page down when the rep leaves the slide, so without
+   this the quote is gone the moment they step back to a product page
+   mid-negotiation. What gets remembered is the sit, never the setup:
+   entered prices, which qualifiers are on, the chosen plans, which
+   offers are revealed. The configuration itself still lives in the file.
+
+   Deliberately device-local and short-lived. It is discarded when the rep
+   presses "Reset for next customer", when the file's offers or discounts
+   no longer match what was saved, and after a few hours, so a stale quote
+   cannot surface in front of the wrong homeowner.
+   ============================================================ */
+var SESSION_KEY = "bw-investment-guide-sit";
+
+function sitMemoryOn() {
+  return !CONFIG.session || CONFIG.session.rememberDuringSit !== false;
+}
+function sitWindowMs() {
+  var m = (CONFIG.session && Number(CONFIG.session.restoreWindowMinutes)) || 360;
+  return m * 60000;
+}
+/* If the deck is re-exported with different offers or discounts, an old
+   saved sit no longer describes anything real. */
+function sitFingerprint() {
+  return [
+    CONFIG.offers.map(function (o) { return o.id; }).join(","),
+    CONFIG.discounts.map(function (d) { return d.id; }).join(","),
+    CONFIG.priceInputs.map(function (i) { return i.id; }).join(",")
+  ].join("|");
+}
+
+function saveSit() {
+  if (!sitMemoryOn()) return;
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+      v: 1, at: Date.now(), fp: sitFingerprint(), s: S
+    }));
+  } catch (e) {
+    /* Some webviews refuse storage. The sit still works, it just will not
+       survive leaving the slide. Nothing here breaks because of it. */
+  }
+}
+
+function clearSit() {
+  try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+}
+
+function loadSit() {
+  if (!sitMemoryOn()) return false;
+  var raw = null;
+  try { raw = localStorage.getItem(SESSION_KEY); } catch (e) { return false; }
+  if (!raw) return false;
+  var saved;
+  try { saved = JSON.parse(raw); } catch (e) { clearSit(); return false; }
+  if (!saved || saved.v !== 1) { clearSit(); return false; }
+  if (saved.fp !== sitFingerprint()) { clearSit(); return false; }
+  if (!saved.at || (Date.now() - saved.at) > sitWindowMs()) { clearSit(); return false; }
+
+  var got = saved.s || {};
+  Object.keys(S).forEach(function (k) {
+    if (got[k] !== undefined && got[k] !== null) S[k] = got[k];
+  });
+  S.restoredAt = saved.at;
+  return true;
+}
+
+function money(n) {
+  var neg = n < 0;
+  var s = "$" + Math.abs(Math.round(n)).toLocaleString("en-US");
+  return neg ? "-" + s : s;
+}
+
+function baseTotal() {
+  var t = 0;
+  CONFIG.priceInputs.forEach(function (pi) { if (pi.enabled) t += Number(S.inputs[pi.id] || 0); });
+  return t;
+}
+
+function discountAmount(d, running) {
+  var basis = d.target === "TOTAL" ? running : Number(S.inputs[d.target] || 0);
+  var val = d.repAdjustable ? Number(S.marketing || 0) : Number(d.value || 0);
+  if (d.mode === "PERCENTAGE") return basis * (val / 100);
+  return val;
+}
+
+function computeOffer(offer) {
+  var base = baseTotal();
+  var running = base;
+  var lines = [];
+
+  offer.discounts.forEach(function (did) {
+    var d = findDiscount(did);
+    if (!d) return;
+    if (d.repToggleable && !S.toggles[d.id]) return;
+    if (!d.repToggleable && d.defaultOn === false && !S.toggles[d.id]) return;
+
+    var amt = discountAmount(d, running);
+    running += (d.method === "ADD" ? amt : -amt);
+    lines.push({ name: d.name, amount: amt, method: d.method });
+  });
+
+  // Optional cap on cumulative discount
+  if (CONFIG.limits.maxTotalDiscountEnabled && base > 0) {
+    var floor = base * (1 - Number(CONFIG.limits.maxTotalDiscountPercent || 0) / 100);
+    if (running < floor) running = floor;
+  }
+  if (running < 0) running = 0;
+
+  var deposit = Math.min(Number(S.deposit || 0), running);
+  return {
+    base: base,
+    lines: lines,
+    total: running,
+    saved: base - running,
+    deposit: deposit,
+    financed: Math.max(running - deposit, 0)
+  };
+}
+
+/* `res` is the result of computeOffer. A plan may require its own minimum
+   down payment; whatever the homeowner puts down wins if it is larger. */
+function payment(plan, res) {
+  if (!plan) return { kind: "none", down: 0 };
+
+  if (plan.method === "CUSTOM_VALUE") {
+    return plan.custom ? { kind: "text", text: plan.custom, down: res.deposit } : { kind: "none", down: 0 };
+  }
+
+  /* A split is half of the price, full stop. It ignores the down payment,
+     because paying half at signing and putting money down are the same act. */
+  if (plan.method === "PERCENT_OF_TOTAL") {
+    var due = res.total * (Number(plan.percent || 0) / 100);
+    return { kind: "split", value: due, remainder: Math.max(res.total - due, 0), down: 0 };
+  }
+
+  var required = res.total * (Number(plan.downPercent || 0) / 100);
+  var down = Math.min(Math.max(res.deposit, required), res.total);
+  var principal = res.total - down;
+
+  if (plan.method === "PAYMENT_FACTOR") {
+    var f = Number(plan.factor || 0);
+    if (f <= 0) return plan.custom ? { kind: "text", text: plan.custom, down: down } : { kind: "amount", value: 0, down: down };
+    return { kind: "amount", value: principal * f, down: down, financed: principal };
+  }
+
+  // TERM_AND_INTEREST_RATE, and PROMO_THEN_TERM once the promo months are over
+  var n = Number(plan.term || 0);
+  var out = { kind: "amount", value: 0, down: down, financed: principal };
+  if (plan.method === "PROMO_THEN_TERM") {
+    out.promo = plan.promoLabel || (plan.promoMonths + " Months No Payments, No Interest");
+    /* The longer promotions land at a rate we deliberately do not quote. They
+       are sold to people who clear the balance before interest starts, so
+       putting that rate into a monthly figure would misrepresent the offer. */
+    if (plan.showPostPromoPayment === false) return out;
+  }
+  if (principal <= 0 || n <= 0) return out;
+  var r = Number(plan.rate || 0) / 100 / 12;
+  out.value = (r === 0) ? principal / n : principal * r / (1 - Math.pow(1 + r, -n));
+  return out;
+}
+
+/* ============================================================
+   4. Rendering
+   ============================================================ */
+var $ = function (id) { return document.getElementById(id); };
+function el(tag, cls, html) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (html !== undefined) e.innerHTML = html;
+  return e;
+}
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  });
+}
+
+/* ============================================================
+   Text styling registry
+
+   Every piece of text a homeowner reads is listed here once, with the
+   selector that targets it and what may be adjusted. Administrator then
+   needs one dropdown rather than a row per property, and adding a new
+   adjustable element means adding a line here.
+   ============================================================ */
+var FONT_STACKS = {
+  sans:     'var(--font-sans)',
+  serif:    'var(--font-serif)',
+  georgia:  'Georgia, "Times New Roman", serif',
+  times:    '"Times New Roman", Times, serif',
+  garamond: 'Garamond, Georgia, serif',
+  segoe:    '"Segoe UI", system-ui, sans-serif',
+  arial:    'Arial, Helvetica, sans-serif',
+  trebuchet:'"Trebuchet MS", Tahoma, sans-serif',
+  verdana:  'Verdana, Geneva, sans-serif',
+  tahoma:   'Tahoma, Verdana, sans-serif'
+};
+var FONT_CHOICES = [
+  ["sans", "Body sans (default)"], ["serif", "Heading serif"], ["georgia", "Georgia"],
+  ["times", "Times New Roman"], ["garamond", "Garamond"], ["segoe", "Segoe UI"],
+  ["arial", "Arial"], ["trebuchet", "Trebuchet MS"], ["verdana", "Verdana"], ["tahoma", "Tahoma"]
+];
+var WEIGHT_CHOICES = [["400", "Regular"], ["600", "Semibold"], ["700", "Bold"], ["800", "Heavy"]];
+
+var TEXT_ELEMENTS = [
+  { key: "pageTitle",     label: "Page title \u2014 Investment Guide",         sel: ".hdr h1",
+    def: { size: 15, color: "#032456", weight: "600", font: "serif" }, min: 10, max: 40 },
+  { key: "offerTitle",    label: "Offer title \u2014 1-Year Pricing",          sel: ".offer .title",
+    def: { size: 35, color: "#032456", weight: "600", font: "serif" }, min: 16, max: 56, clamp: [17, 2.45] },
+  { key: "offerSubtitle", label: "Offer subtitle \u2014 Valid for 30 days",    sel: ".offer .subtitle",
+    def: { size: 17, color: "#535860", weight: "600", font: "sans" }, min: 11, max: 28, clamp: [11, 1.2] },
+  { key: "paymentLabel",  label: "Payment label \u2014 Payment as low as",     sel: ".finance .flabel",
+    def: { size: 17, color: "#C9D4E6", weight: "600", font: "sans" }, min: 11, max: 30 },
+  { key: "paymentAmount", label: "Monthly payment \u2014 $168/month",          sel: ".finance .amount",
+    def: { size: 66, color: "#FFFFFF", weight: "700", font: "sans" }, min: 30, max: 120 },
+  { key: "promoBadge",    label: "Promo badge \u2014 No Payments, No Interest", sel: ".finance .promo",
+    def: { size: 15.5, color: "#032456", weight: "700", font: "sans" }, min: 10, max: 26 },
+  { key: "downNote",      label: "Down payment note under the payment",        sel: ".finance .financed",
+    def: { size: 15, color: "#C9D4E6", weight: "600", font: "sans" }, min: 10, max: 24 },
+  { key: "lineLabel",     label: "Line label \u2014 Project Total",            sel: ".lines .row .k",
+    def: { size: 17, color: "#535860", weight: "600", font: "sans" }, min: 11, max: 28 },
+  { key: "lineAmount",    label: "Line amount \u2014 $22,000",                 sel: ".lines .row .v",
+    def: { size: 25, color: "#032456", weight: "700", font: "sans" }, min: 14, max: 42 },
+  { key: "discountLabel", label: "Discount name, in green",                    sel: ".lines .row.credit .k",
+    def: { size: 17, color: "#0F7A45", weight: "700", font: "sans" }, min: 11, max: 28 },
+  { key: "discountAmount",label: "Discount amount, in green",                  sel: ".lines .row.credit .v",
+    def: { size: 23, color: "#0F7A45", weight: "700", font: "sans" }, min: 13, max: 40 },
+  { key: "totalLabel",    label: "Offer total label",                          sel: ".total .k",
+    def: { size: 17, color: "#535860", weight: "600", font: "sans" }, min: 11, max: 28 },
+  { key: "totalAmount",   label: "Offer total \u2014 $19,800",                 sel: ".total .v",
+    def: { size: 38, color: "#032456", weight: "700", font: "sans" }, min: 18, max: 64 },
+  { key: "youSave",       label: "You Save $2,200",                            sel: ".save",
+    def: { size: 16, color: "#0F7A45", weight: "700", font: "sans" }, min: 11, max: 40 },
+  { key: "financeButton", label: "Financing button text",                      sel: ".btn-fin",
+    def: { size: 17, color: "#FFFFFF", weight: "700", font: "sans" }, min: 12, max: 28 }
+];
+
+function textElement(key) {
+  for (var i = 0; i < TEXT_ELEMENTS.length; i++) if (TEXT_ELEMENTS[i].key === key) return TEXT_ELEMENTS[i];
+  return null;
+}
+/* The saved value where there is one, otherwise the built-in default. */
+function textStyle(key, cfg) {
+  var e = textElement(key);
+  if (!e) return {};
+  var src = cfg || CONFIG;
+  var saved = (src.layout && src.layout.elements && src.layout.elements[key]) || {};
+  return {
+    size:   saved.size   !== undefined ? saved.size : e.def.size,
+    color:  saved.color  !== undefined ? saved.color : e.def.color,
+    weight: saved.weight !== undefined ? String(saved.weight) : e.def.weight,
+    font:   saved.font   !== undefined ? saved.font : e.def.font
+  };
+}
+
+function applyElementStyles() {
+  var css = "";
+  TEXT_ELEMENTS.forEach(function (e) {
+    var v = textStyle(e.key);
+    /* Titles keep shrinking rather than wrapping, so the payment panels stay
+       level across columns. The chosen size becomes the ceiling. */
+    var fs = e.clamp
+      ? "clamp(" + e.clamp[0] + "px," + e.clamp[1] + "vw," + v.size + "px)"
+      : v.size + "px";
+    css += e.sel + "{font-size:" + fs + ";color:" + v.color +
+      ";font-weight:" + v.weight + ";font-family:" + (FONT_STACKS[v.font] || FONT_STACKS.sans) + "}\n";
+  });
+  var tag = document.getElementById("pk-element-css");
+  if (!tag) {
+    tag = document.createElement("style");
+    tag.id = "pk-element-css";
+    document.head.appendChild(tag);
+  }
+  tag.textContent = css;
+}
+
+/* Older files stored a few sizes and colours as their own keys. Fold them
+   into the element map once, so there is one system rather than two. */
+function migrateLayout(L) {
+  if (!L) return;
+  if (!L.elements) L.elements = {};
+  function move(oldKey, elKey, prop) {
+    if (L[oldKey] === undefined || L[oldKey] === null) return;
+    if (!L.elements[elKey]) L.elements[elKey] = {};
+    if (L.elements[elKey][prop] === undefined) L.elements[elKey][prop] = L[oldKey];
+    delete L[oldKey];
+  }
+  move("pageTitleSize", "pageTitle", "size");
+  move("titleSize", "offerTitle", "size");
+  move("paymentSize", "paymentAmount", "size");
+  move("titleColor", "offerTitle", "color");
+  move("subtitleColor", "offerSubtitle", "color");
+  if (L.baseSize !== undefined && L.baseSize !== null) {
+    ["lineLabel", "totalLabel", "offerSubtitle"].forEach(function (k) {
+      if (!L.elements[k]) L.elements[k] = {};
+      if (L.elements[k].size === undefined) L.elements[k].size = L.baseSize;
+    });
+    delete L.baseSize;
+  }
+  if (L.headingFont !== undefined && L.headingFont !== null) {
+    ["pageTitle", "offerTitle"].forEach(function (k) {
+      if (!L.elements[k]) L.elements[k] = {};
+      if (L.elements[k].font === undefined) L.elements[k].font = L.headingFont;
+    });
+    delete L.headingFont;
+  }
+}
+
+function applyTheme() {
+  document.documentElement.style.setProperty("--btn", CONFIG.branding.button);
+  document.documentElement.style.setProperty("--credit", CONFIG.branding.credit);
+  document.body.className = "";
+  var bd = CONFIG.page.backdrop;
+  if (bd && bd !== "transparent") document.body.classList.add("bg-" + bd);
+
+  /* Layout is data, not code, so it survives an export and can be changed
+     without opening the file. Custom CSS is the escape hatch for anything
+     the named controls do not cover. */
+  migrateLayout(CONFIG.layout);
+  applyElementStyles();
+  var L = CONFIG.layout || {};
+  var rs = document.documentElement.style;
+  var px = function (v, d) { return (v === undefined || v === null || v === "" ? d : v) + "px"; };
+  rs.setProperty("--pk-amount", px(L.paymentSize, 66));
+  rs.setProperty("--pk-title", px(L.titleSize, 35));
+  rs.setProperty("--pk-base", px(L.baseSize, 17));
+  rs.setProperty("--pk-radius", px(L.cardRadius, 14));
+  rs.setProperty("--pk-pad", px(L.cardPadding, 22));
+  rs.setProperty("--pk-gap-block", px(L.gapBetweenCards, 15));
+  rs.setProperty("--pk-gap-col", px(L.gapBetweenColumns, 22));
+  rs.setProperty("--pk-page-title", px(L.pageTitleSize, 15));
+
+  /* The page itself carries no fill by default, so whatever sits behind it
+     in Ingage shows through untouched. Only the pricing cards are opaque. */
+  var hb = L.headerBackground || "transparent";
+  rs.setProperty("--pk-hdr-bg", hb === "white" ? "#ffffff" : hb === "navy" ? "var(--navy-800)" : "transparent");
+  rs.setProperty("--pk-hdr-border", hb === "white" ? "var(--border)" : "transparent");
+  rs.setProperty("--pk-hdr-text", hb === "navy" ? "#ffffff" : "var(--navy-800)");
+  rs.setProperty("--pk-heading-font", HEADING_FONTS[L.headingFont] || HEADING_FONTS.serif);
+  rs.setProperty("--pk-title-color", L.titleColor || "#032456");
+  rs.setProperty("--pk-subtitle-color", L.subtitleColor || "#535860");
+
+  var cs = document.getElementById("pk-custom-css");
+  if (!cs) {
+    cs = document.createElement("style");
+    cs.id = "pk-custom-css";
+    document.head.appendChild(cs);
+  }
+  cs.textContent = L.customCss || "";
+
+  var bgi = CONFIG.branding.backgroundImage;
+  if (bgi) {
+    document.body.style.backgroundImage = "url(" + bgi + ")";
+    document.body.style.backgroundSize = "cover";
+    document.body.style.backgroundPosition = "center";
+    document.body.style.backgroundRepeat = "no-repeat";
+  } else {
+    document.body.style.backgroundImage = "";
+  }
+  $("pageTitle").textContent = CONFIG.page.title;
+
+  var L = $("logos");
+  L.innerHTML = "";
+  var b = CONFIG.branding;
+  if (b.logoPrimary) { var i1 = el("img"); i1.src = b.logoPrimary; L.appendChild(i1); }
+  else if (b.wordmarkPrimary) L.appendChild(el("div", "wordmark", esc(b.wordmarkPrimary)));
+  if ((b.logoPrimary || b.wordmarkPrimary) && (b.logoSecondary || b.wordmarkSecondary)) L.appendChild(el("div", "divider"));
+  if (b.logoSecondary) { var i2 = el("img", "logo-secondary"); i2.src = b.logoSecondary; L.appendChild(i2); }
+  else if (b.wordmarkSecondary) L.appendChild(el("div", "wordmark alt", esc(b.wordmarkSecondary)));
+}
+
+/* Everything the rep has revealed. */
+function shownOffers() {
+  return CONFIG.offers.filter(function (o) { return S.shown[o.id]; });
+}
+/* What is actually on screen. Focus mode narrows it to a single column
+   so the homeowner is looking at one number, not three. */
+function visibleOffers() {
+  var shown = shownOffers();
+  if (S.focus) {
+    var only = shown.filter(function (o) { return o.id === S.focus; });
+    if (only.length) return only;
+    S.focus = null;
+  }
+  return shown;
+}
+
+function renderStage() {
+  var grid = $("grid"), board = $("board");
+  grid.innerHTML = "";
+  var offers = visibleOffers();
+  grid.style.setProperty("--cols", Math.max(offers.length, 1));
+  board.classList.toggle("one", offers.length === 1 && !S.focus);
+  board.classList.toggle("focused", !!S.focus);
+  saveSit();
+
+  if (!offers.length) {
+    grid.appendChild(el("div", "empty-slot", "No offers are showing.<br>Open <strong>Pricing</strong> to reveal one."));
+    return;
+  }
+  offers.forEach(function (o) { grid.appendChild(renderOffer(o)); });
+  equalizeFinance();
+}
+
+/* A promo badge, a down-payment line or a split-payment line makes one navy
+   panel taller than its neighbours. Rather than reserve space for each of
+   those cases separately, measure the tallest panel after a render and pad
+   the rest up to it. Every blue block then starts and ends on the same line
+   whatever combination of plans the rep has chosen. */
+function equalizeFinance() {
+  var panels = [].slice.call(document.querySelectorAll(".offer .finance"));
+  panels.forEach(function (el) { el.style.minHeight = ""; });
+  if (panels.length < 2) return;
+  var tallest = 0;
+  panels.forEach(function (el) {
+    var h = el.getBoundingClientRect().height;
+    if (h > tallest) tallest = h;
+  });
+  panels.forEach(function (el) { el.style.minHeight = Math.ceil(tallest) + "px"; });
+}
+
+var equalizePending = false;
+window.addEventListener("resize", function () {
+  if (equalizePending) return;
+  equalizePending = true;
+  requestAnimationFrame(function () { equalizePending = false; equalizeFinance(); });
+});
+
+function renderOffer(offer) {
+  var r = computeOffer(offer);
+  var plan = findPlan(S.plan[offer.id]);
+  var pay = payment(plan, r);
+
+  var wrap = el("div", "offer");
+
+  var head = el("div", "head");
+  head.appendChild(el("div", "title", esc(offer.title)));
+  if (offer.subtitle) head.appendChild(el("div", "subtitle", esc(offer.subtitle)));
+  wrap.appendChild(head);
+
+  var body = el("div", "body");
+
+  /* --- financing focal panel (sits above the total, by design) --- */
+  var fp = el("div", "panel finance");
+  if (pay.kind === "amount") {
+    fp.appendChild(el("div", "flabel", esc((plan && plan.headlineLabel) || "Payment as low as")));
+    fp.appendChild(el("div", "amount", money(pay.value) + '<span class="per">/month</span>'));
+  } else if (pay.kind === "split") {
+    fp.appendChild(el("div", "flabel", esc(plan.headlineLabel || "Due at signing")));
+    fp.appendChild(el("div", "amount", money(pay.value)));
+  } else if (pay.kind === "text") {
+    fp.appendChild(el("div", "flabel", "Your payment"));
+    fp.appendChild(el("div", "amount text", esc(pay.text)));
+  } else {
+    fp.appendChild(el("div", "flabel", "Payment terms"));
+    fp.appendChild(el("div", "amount text", esc(plan ? plan.title : "Select a plan")));
+  }
+  /* Below the payment, never above it. A badge above would push the
+     monthly figure down and it would no longer line up across columns. */
+  if (pay.promo) fp.appendChild(el("div", "promo", esc(pay.promo)));
+
+  if (plan && pay.kind === "amount") {
+    // Never the term or the rate: the homeowner is not quoted a specific
+    // lender's plan, only the payment they could reach. The badge already
+    // names a promo plan, so it does not repeat here.
+    var desc = pay.promo ? "" : publicName(plan);
+    if (desc && desc.toLowerCase() !== "payment as low as") fp.appendChild(el("div", "plan", esc(desc)));
+  } else if (plan && pay.kind === "split") {
+    fp.appendChild(el("div", "plan split",
+      "then <strong>" + money(pay.remainder) + "</strong> " + esc(plan.remainderLabel || "upon completion")));
+  } else if (plan && pay.kind === "text") {
+    fp.appendChild(el("div", "plan", esc(publicName(plan))));
+  }
+
+  if (pay.down > 0) {
+    fp.appendChild(el("div", "financed",
+      "with " + money(pay.down) + " " + esc(CONFIG.page.priceAdjustmentLabel.toLowerCase())));
+  }
+  /* --- price breakdown --- */
+  var bp = el("div", "panel breakdown");
+  var lines = el("div", "lines");
+
+  var row0 = el("div", "row");
+  row0.appendChild(el("div", "k", esc(offer.totalLabel)));
+  row0.appendChild(el("div", "v", money(r.base)));
+  lines.appendChild(row0);
+
+  r.lines.forEach(function (L) {
+    var row = el("div", "row credit");
+    row.appendChild(el("div", "k", esc(L.name)));
+    row.appendChild(el("div", "v", (L.method === "ADD" ? "+ " : "- ") + money(L.amount)));
+    lines.appendChild(row);
+  });
+  bp.appendChild(lines);
+
+  bp.appendChild(el("div", "rule"));
+
+  var tot = el("div", "total");
+  tot.appendChild(el("div", "k", esc(offer.title)));
+  tot.appendChild(el("div", "v", money(r.total)));
+  if (offer.showYouSave && r.saved > 0) tot.appendChild(el("div", "save", "You Save " + money(r.saved)));
+  bp.appendChild(tot);
+  /* Payment above the breakdown by default, which is what makes it the
+     focal point. Administrator can put it below instead. */
+  if ((CONFIG.layout && CONFIG.layout.paymentPosition) === "bottom") {
+    body.appendChild(bp);
+    body.appendChild(fp);
+  } else {
+    body.appendChild(fp);
+    body.appendChild(bp);
+  }
+
+  wrap.appendChild(body);
+
+  /* --- footer button --- */
+  var foot = el("div", "foot");
+  var btn = el("button", "btn-fin", esc(offer.financingButtonTitle));
+  btn.addEventListener("click", function () { openFinancing(offer); });
+  foot.appendChild(btn);
+
+  /* Bottom right of the column: narrow the slide to this offer alone,
+     and the same spot brings the other columns back. The strip is rendered
+     in every column, empty where there is no button, so all the columns
+     finish at the same height. */
+  var row = el("div", "focus-row");
+  foot.appendChild(row);
+  if (offer.focusable !== false && (S.focus || shownOffers().length > 1)) {
+    var fb;
+    if (S.focus === offer.id) {
+      fb = el("button", "btn-focus on",
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>' +
+        "<span>Return to standard pricing</span>");
+      fb.addEventListener("click", function () { S.focus = null; renderStage(); });
+    } else {
+      fb = el("button", "btn-focus", "<span>" + esc(offer.focusLabel || "Show only this pricing") + "</span>");
+      fb.addEventListener("click", function () { S.focus = offer.id; renderStage(); });
+    }
+    row.appendChild(fb);
+  }
+  wrap.appendChild(foot);
+
+  return wrap;
+}
+
+/* ============================================================
+   5. Financing table
+   ============================================================ */
+function openFinancing(offer) {
+  var r = computeOffer(offer);
+  $("finTitle").textContent = offer.title + " — " + offer.financingButtonTitle;
+
+  var box = $("finBody");
+  box.innerHTML = "";
+  var lbl = CONFIG.page.priceAdjustmentLabel.toLowerCase();
+  var ownDown = offer.plans.some(function (pid) {
+    var p = findPlan(pid);
+    return p && Number(p.downPercent || 0) > 0 && r.total * (p.downPercent / 100) > r.deposit;
+  });
+  box.appendChild(el("div", "hint",
+    money(r.total) + " " + esc(offer.title) +
+    (r.deposit > 0 ? ", with " + money(r.deposit) + " " + esc(lbl) : "") + "." +
+    (ownDown ? " Some plans ask for a larger " + esc(lbl) + "." : "")));
+
+  var F = CONFIG.financing;
+
+  /* Two plans can carry the same customer-facing name — three of the term
+     plans are all called "Payment as low as". With the term and rate hidden
+     those rows would be indistinguishable, so only the best payment under a
+     given name is listed. Give plans distinct public names to list them all. */
+  var rows = [];
+  var byName = {};
+  offer.plans.forEach(function (pid) {
+    var p = findPlan(pid);
+    if (!p) return;
+    var pay = payment(p, r);
+    var name = publicName(p);
+    var entry = { plan: p, pay: pay, name: name };
+    var collapse = !F.showTerm && !F.showRate;
+    if (collapse && byName[name]) {
+      var prev = byName[name];
+      var selId = S.plan[offer.id];
+      if (prev.plan.id === selId) return;                        // already the one on the card
+      if (p.id === selId) { prev.plan = p; prev.pay = pay; return; }
+      var a = (pay.kind === "amount") ? pay.value : null;
+      var b = (prev.pay.kind === "amount") ? prev.pay.value : null;
+      if (a !== null && b !== null && a < b) { prev.plan = p; prev.pay = pay; }
+      return;
+    }
+    byName[name] = entry;
+    rows.push(entry);
+  });
+
+  var t = el("table", "fin");
+  var head = "<tr><th>Plan</th>";
+  if (F.showTerm) head += "<th>Months</th>";
+  if (F.showRate) head += "<th>Rate</th>";
+  if (F.showMonthlyPayments) head += "<th>Monthly payment</th>";
+  head += "</tr>";
+  t.appendChild(el("thead", null, head));
+
+  var tb = el("tbody");
+  rows.forEach(function (row) {
+    var p = row.plan, pay = row.pay;
+    var tr = el("tr", p.id === S.plan[offer.id] ? "sel" : null);
+    var cells = "<td>" + esc(row.name) + "</td>";
+    if (F.showTerm) cells += "<td>" + (p.term || "—") + "</td>";
+    if (F.showRate) cells += "<td>" + (p.method === "TERM_AND_INTEREST_RATE" ? p.rate + "%" : "—") + "</td>";
+    if (F.showMonthlyPayments) cells += '<td class="pay">' + (payText(pay) ? esc(payText(pay)) : "—") + "</td>";
+    tr.innerHTML = cells;
+    /* The whole row is the control. Tapping a small link in the last column
+       is a poor target on a tablet held at arm's length across a table. */
+    tr.setAttribute("role", "button");
+    tr.setAttribute("tabindex", "0");
+    tr.addEventListener("click", function () {
+      S.plan[offer.id] = p.id;
+      renderStage();
+      openFinancing(offer);
+    });
+    tr.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); tr.click(); }
+    });
+    tb.appendChild(tr);
+  });
+  t.appendChild(tb);
+  box.appendChild(t);
+  if (F.disclaimer) box.appendChild(el("div", "hint", esc(F.disclaimer)));
+  openModal("finModal");
+}
+
+/* ============================================================
+   6. Price inputs
+   ============================================================ */
+function renderInputs() {
+  var box = $("inputsBody");
+  box.innerHTML = "";
+
+  CONFIG.priceInputs.forEach(function (pi) {
+    if (!pi.enabled) return;
+    box.appendChild(moneyField(pi.label, S.inputs[pi.id], function (v) { S.inputs[pi.id] = v; refreshTotals(); }));
+  });
+  box.appendChild(moneyField(CONFIG.page.priceAdjustmentLabel, S.deposit, function (v) { S.deposit = v; refreshTotals(); }));
+
+  var tr = el("div", "totrow");
+  var c1 = el("div"); c1.appendChild(el("div", "k", "Project Total")); c1.appendChild(el("div", "v", "", ""));
+  c1.lastChild.className = "v"; c1.lastChild.id = "sumTotal";
+  var c2 = el("div"); c2.appendChild(el("div", "k", "Financed Total"));
+  var v2 = el("div", "v"); v2.id = "sumFinanced"; c2.appendChild(v2);
+  tr.appendChild(c1); tr.appendChild(c2);
+  box.appendChild(tr);
+  refreshTotals();
+}
+
+function moneyField(label, value, onChange) {
+  var f = el("div", "field");
+  f.appendChild(el("label", null, esc(label)));
+  var w = el("div", "wrap");
+  w.appendChild(el("span", "pre", "$"));
+  var inp = document.createElement("input");
+  inp.type = "text";
+  inp.inputMode = "decimal";
+  inp.value = value ? String(value) : "0";
+  inp.addEventListener("focus", function () { inp.select(); });
+  inp.addEventListener("input", function () {
+    var n = parseFloat(String(inp.value).replace(/[^0-9.]/g, ""));
+    onChange(isNaN(n) ? 0 : n);
+  });
+  inp.addEventListener("blur", function () { if (inp.value.trim() === "") { inp.value = "0"; onChange(0); } });
+  w.appendChild(inp);
+  f.appendChild(w);
+  return f;
+}
+
+function refreshTotals() {
+  var base = baseTotal();
+  var st = $("sumTotal"), sf = $("sumFinanced");
+  if (st) st.textContent = money(base);
+  if (sf) sf.textContent = money(Math.max(base - Number(S.deposit || 0), 0));
+  renderStage();
+}
+
+/* ============================================================
+   7. Pricing drawer
+   ============================================================ */
+function renderDrawer() {
+  var box = $("drawerBody");
+  box.innerHTML = "";
+
+  /* Rep-facing only. Confirms the quote came back, and shows when it was
+     saved so a sit left over from an earlier appointment is obvious. */
+  if (S.restoredAt) {
+    var when = new Date(S.restoredAt);
+    box.appendChild(el("div", "sit-note",
+      "Picked up where you left off. Saved at " +
+      when.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) + "."));
+  }
+
+  // Prices
+  var g0 = el("div", "grp");
+  g0.appendChild(el("div", "lbl", "Prices"));
+  var pbtn = el("button", "ghost-btn", "Enter project prices &amp; " + esc(CONFIG.page.priceAdjustmentLabel.toLowerCase()));
+  pbtn.style.width = "100%";
+  pbtn.addEventListener("click", function () { renderInputs(); openModal("inputsModal"); });
+  g0.appendChild(pbtn);
+  box.appendChild(g0);
+
+  // Global qualifier toggles
+  /* A toggle that no offer uses cannot change a price, and a rep flipping
+     one would reasonably think it had. Only list discounts attached to at
+     least one offer. */
+  var used = {};
+  CONFIG.offers.forEach(function (o) { o.discounts.forEach(function (id) { used[id] = true; }); });
+  var globals = CONFIG.discounts.filter(function (d) {
+    return d.repToggleable && !d.repAdjustable && used[d.id];
+  });
+  if (globals.length) {
+    var g1 = el("div", "grp");
+    g1.appendChild(el("div", "lbl", "Qualifier discounts"));
+    globals.forEach(function (d) { g1.appendChild(toggleRow(d.name, discountSub(d), S.toggles[d.id], function (on) { S.toggles[d.id] = on; renderStage(); })); });
+    box.appendChild(g1);
+  }
+
+  // Offer reveal
+  var g2 = el("div", "grp");
+  g2.appendChild(el("div", "lbl", "Show offers"));
+  CONFIG.offers.forEach(function (o) {
+    if (!o.repToggleable) return;
+    g2.appendChild(toggleRow(o.title, o.subtitle, S.shown[o.id], function (on) { S.shown[o.id] = on; renderDrawer(); renderStage(); }));
+  });
+  box.appendChild(g2);
+
+  /* Financing plans are chosen from the Financing Options table on the card,
+     not from here, so this panel stays short enough to read at a glance. */
+
+  // Rep-adjustable discounts
+  CONFIG.discounts.filter(function (d) { return d.repAdjustable; }).forEach(function (d) {
+    var g = el("div", "grp");
+    g.appendChild(el("div", "lbl", d.name));
+    var row = el("div", "slider-row");
+    var top = el("div", "top");
+    top.appendChild(el("div", "name", "Applied"));
+    var valEl = el("div", "val", S.marketing + "%");
+    top.appendChild(valEl);
+    row.appendChild(top);
+    var rng = document.createElement("input");
+    rng.type = "range"; rng.min = "0"; rng.max = String(d.repMax || 10); rng.step = "0.5";
+    rng.value = String(S.marketing || 0);
+    rng.addEventListener("input", function () {
+      S.marketing = parseFloat(rng.value) || 0;
+      S.toggles[d.id] = S.marketing > 0;
+      valEl.textContent = S.marketing + "%";
+      renderStage();
+    });
+    row.appendChild(rng);
+    /* Name the offers it actually moves. A slider wired to nothing is
+       worse than no slider, because the rep believes it worked. */
+    var usedIn = CONFIG.offers.filter(function (o) { return o.discounts.indexOf(d.id) >= 0; })
+      .map(function (o) { return o.title; });
+    row.appendChild(el("div", "hint",
+      "Capped at " + (d.repMax || 10) + "% by the administrator. " +
+      (usedIn.length
+        ? "Applies to " + esc(usedIn.join(", ")) + " only."
+        : "Not attached to any offer yet, so it changes nothing.")));
+    g.appendChild(row);
+    box.appendChild(g);
+  });
+
+}
+
+function discountSub(d) {
+  var v = d.mode === "PERCENTAGE" ? d.value + "%" : money(d.value);
+  var t = d.target === "TOTAL" ? "project total" : (function () {
+    var pi = CONFIG.priceInputs.filter(function (p) { return p.id === d.target; })[0];
+    return pi ? pi.label : d.target;
+  })();
+  return (d.method === "ADD" ? "Adds " : "Takes ") + v + " off " + t;
+}
+
+function toggleRow(name, sub, on, cb) {
+  var r = el("div", "tog");
+  r.appendChild(el("div", "name", esc(name) + (sub ? "<small>" + esc(sub) + "</small>" : "")));
+  var sw = el("div", "sw" + (on ? " on" : ""));
+  r.appendChild(sw);
+  r.addEventListener("click", function () {
+    on = !on;
+    sw.classList.toggle("on", on);
+    cb(on);
+  });
+  return r;
+}
+
+/* ============================================================
+   8. Admin
+   ============================================================ */
+var adminTab = "general";
+var adminTextKey = "youSave";
+var adminUnlocked = false;
+
+/* Self-contained SHA-256. crypto.subtle is unavailable in non-secure
+   contexts, and an Ingage webview is not guaranteed to be one. */
+function sha256(str) {
+  var K = [0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+           0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+           0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+           0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+           0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+           0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+           0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+           0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  var H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+
+  // UTF-8 encode
+  var bytes = [];
+  for (var i = 0; i < str.length; i++) {
+    var c = str.charCodeAt(i);
+    if (c < 0x80) bytes.push(c);
+    else if (c < 0x800) bytes.push(0xc0 | (c >> 6), 0x80 | (c & 63));
+    else if (c < 0xd800 || c >= 0xe000) bytes.push(0xe0 | (c >> 12), 0x80 | ((c >> 6) & 63), 0x80 | (c & 63));
+    else { i++; var cp = 0x10000 + (((c & 0x3ff) << 10) | (str.charCodeAt(i) & 0x3ff));
+           bytes.push(0xf0 | (cp >> 18), 0x80 | ((cp >> 12) & 63), 0x80 | ((cp >> 6) & 63), 0x80 | (cp & 63)); }
+  }
+
+  var bitLen = bytes.length * 8;
+  bytes.push(0x80);
+  while (bytes.length % 64 !== 56) bytes.push(0);
+  for (var b = 7; b >= 0; b--) bytes.push((b < 4 ? Math.floor(bitLen / Math.pow(2, 8 * b)) : 0) & 0xff);
+
+  function rotr(x, n) { return (x >>> n) | (x << (32 - n)); }
+  var w = new Array(64);
+
+  for (var off = 0; off < bytes.length; off += 64) {
+    for (var t = 0; t < 16; t++) {
+      w[t] = (bytes[off + t * 4] << 24) | (bytes[off + t * 4 + 1] << 16) | (bytes[off + t * 4 + 2] << 8) | bytes[off + t * 4 + 3];
+    }
+    for (t = 16; t < 64; t++) {
+      var s0 = rotr(w[t - 15], 7) ^ rotr(w[t - 15], 18) ^ (w[t - 15] >>> 3);
+      var s1 = rotr(w[t - 2], 17) ^ rotr(w[t - 2], 19) ^ (w[t - 2] >>> 10);
+      w[t] = (w[t - 16] + s0 + w[t - 7] + s1) | 0;
+    }
+    var a = H[0], bb = H[1], c2 = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+    for (t = 0; t < 64; t++) {
+      var S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+      var ch = (e & f) ^ (~e & g);
+      var t1 = (h + S1 + ch + K[t] + w[t]) | 0;
+      var S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+      var mj = (a & bb) ^ (a & c2) ^ (bb & c2);
+      var t2 = (S0 + mj) | 0;
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c2; c2 = bb; bb = a; a = (t1 + t2) | 0;
+    }
+    H[0] = (H[0] + a) | 0; H[1] = (H[1] + bb) | 0; H[2] = (H[2] + c2) | 0; H[3] = (H[3] + d) | 0;
+    H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;
+  }
+  return H.map(function (x) { return (x >>> 0).toString(16).padStart(8, "0"); }).join("");
+}
+
+function openAdmin() {
+  if (adminUnlocked) { DRAFT = DRAFT || clone(CONFIG); renderAdmin(); openModal("adminModal"); return; }
+  renderGate();
+  openModal("adminModal");
+}
+
+function renderGate() {
+  $("adminHeading").textContent = CONFIG.security.adminHash ? "Administrator sign in" : "Set an administrator password";
+  $("adminFooter").classList.add("hidden");
+  $("adminLock").classList.add("hidden");
+  var box = $("adminBody");
+  box.innerHTML = "";
+
+  if (!CONFIG.security.adminHash) {
+    box.appendChild(el("div", "warn",
+      "No administrator password is set on this file yet. Choose one now, then use <strong>Export configured HTML</strong> to write a copy that carries it. " +
+      "The password is stored as a SHA-256 hash, so it is not readable in the file. Be clear-eyed about what that buys you: it keeps reps out of the settings, but anyone who can edit the HTML can remove the gate. It is a lock on a cabinet, not a vault."));
+  }
+
+  var f1 = el("div", "field");
+  f1.appendChild(el("label", null, "Password"));
+  var w1 = el("div", "wrap");
+  var p1 = document.createElement("input"); p1.type = "password"; p1.autocomplete = "off";
+  w1.appendChild(p1); f1.appendChild(w1); box.appendChild(f1);
+
+  var p2 = null;
+  if (!CONFIG.security.adminHash) {
+    var f2 = el("div", "field");
+    f2.appendChild(el("label", null, "Confirm password"));
+    var w2 = el("div", "wrap");
+    p2 = document.createElement("input"); p2.type = "password"; p2.autocomplete = "off";
+    w2.appendChild(p2); f2.appendChild(w2); box.appendChild(f2);
+  }
+
+  var err = el("div", "err"); box.appendChild(err);
+  var go = el("button", "solid-btn", CONFIG.security.adminHash ? "Unlock" : "Set password");
+  go.addEventListener("click", submit);
+  p1.addEventListener("keydown", function (e) { if (e.key === "Enter") submit(); });
+  if (p2) p2.addEventListener("keydown", function (e) { if (e.key === "Enter") submit(); });
+  box.appendChild(go);
+  setTimeout(function () { p1.focus(); }, 60);
+
+  function submit() {
+    err.textContent = "";
+    var v = p1.value;
+    if (!v) { err.textContent = "Enter a password."; return; }
+    if (!CONFIG.security.adminHash) {
+      if (v.length < 6) { err.textContent = "Use at least 6 characters."; return; }
+      if (v !== p2.value) { err.textContent = "The two passwords do not match."; return; }
+      CONFIG.security.adminHash = sha256(v);
+      adminUnlocked = true;
+      DRAFT = clone(CONFIG);
+      renderAdmin();
+      return;
+    }
+    var h = sha256(v);
+    if (h !== CONFIG.security.adminHash) { err.textContent = "That password is not correct."; return; }
+    adminUnlocked = true;
+    DRAFT = clone(CONFIG);
+    renderAdmin();
+  }
+}
+
+function renderAdmin() {
+  $("adminHeading").textContent = "Administrator";
+  $("adminFooter").classList.remove("hidden");
+  $("adminLock").classList.remove("hidden");
+  var box = $("adminBody");
+  box.innerHTML = "";
+
+  var tabs = el("div", "tabs");
+  [["general", "General"], ["layout", "Layout"], ["discounts", "Discounts"], ["financing", "Financing"], ["offers", "Offers"]].forEach(function (t) {
+    var b = el("button", adminTab === t[0] ? "on" : null, t[1]);
+    b.addEventListener("click", function () { adminTab = t[0]; renderAdmin(); });
+    tabs.appendChild(b);
+  });
+  box.appendChild(tabs);
+
+  pane_explainer:
+  {
+    var ex = el("div", "warn");
+    ex.innerHTML = "<strong>How saving works.</strong> Nothing here is stored in the file you are looking at. " +
+      "Change what you like, watch the slide update behind this panel, then press " +
+      "<strong>Save Ingage .zip</strong>. That downloads a package you can upload to Ingage as it is, " +
+      "with your changes written into it, and it becomes the version every rep sees. " +
+      "<strong>Save .html</strong> gives you the raw page instead, for testing in a browser. " +
+      "Until you do, reloading the page puts everything back.";
+    box.appendChild(ex);
+  }
+
+  var pane = el("div", "tabpane on");
+  if (adminTab === "general") paneGeneral(pane);
+  if (adminTab === "layout") paneLayout(pane);
+  if (adminTab === "discounts") paneDiscounts(pane);
+  if (adminTab === "financing") paneFinancing(pane);
+  if (adminTab === "offers") paneOffers(pane);
+  box.appendChild(pane);
+  setStatus("");
+}
+
+function setStatus(msg) { $("adminStatus").textContent = msg; }
+
+/* Administrator edits live in memory. The background in particular applies
+   the moment it is chosen, which makes it look saved when it is not, so say
+   so plainly until an export actually writes it to a file. */
+var adminDirty = false;
+function markDirty() {
+  adminDirty = true;
+  $("adminDirty").classList.remove("hidden");
+  $("exportBtn").classList.add("pending");
+}
+function clearDirty() {
+  adminDirty = false;
+  $("adminDirty").classList.add("hidden");
+  $("exportBtn").classList.remove("pending");
+}
+
+function editRow(label, value, onChange, type, options) {
+  var d = el("div");
+  d.appendChild(el("label", null, esc(label)));
+  var inp;
+  if (type === "select") {
+    inp = document.createElement("select");
+    options.forEach(function (o) {
+      var op = document.createElement("option");
+      op.value = o[0]; op.textContent = o[1];
+      if (String(o[0]) === String(value)) op.selected = true;
+      inp.appendChild(op);
+    });
+    inp.addEventListener("change", function () { onChange(inp.value); });
+  } else {
+    inp = document.createElement("input");
+    inp.type = type === "number" ? "number" : "text";
+    if (type === "number") inp.step = "any";
+    inp.value = value == null ? "" : value;
+    inp.addEventListener("input", function () {
+      onChange(type === "number" ? (parseFloat(inp.value) || 0) : inp.value);
+    });
+  }
+  d.appendChild(inp);
+  return d;
+}
+
+/* --- General --- */
+function paneGeneral(pane) {
+  var c = DRAFT;
+  var card = el("div", "editcard");
+  card.appendChild(el("div", "cardhead", "<strong>Page</strong>"));
+  var g = el("div", "egrid");
+  g.appendChild(editRow("Page name", c.page.title, function (v) { c.page.title = v; }));
+  g.appendChild(editRow("Down payment label", c.page.priceAdjustmentLabel, function (v) { c.page.priceAdjustmentLabel = v; }));
+  g.appendChild(editRow("Backdrop", c.page.backdrop, function (v) { c.page.backdrop = v; }, "select",
+    [["transparent", "Transparent (for Ingage)"], ["cloud", "Cloud off-white"], ["mist", "Mist"], ["navy", "Navy"]]));
+  card.appendChild(g);
+  card.appendChild(el("div", "hint", "Keep the backdrop transparent when the file is embedded in Ingage so the slide video shows through."));
+  pane.appendChild(card);
+
+  var pcard = el("div", "editcard");
+  pcard.appendChild(el("div", "cardhead", "<strong>Price inputs</strong>"));
+  c.priceInputs.forEach(function (pi) {
+    var r = el("div", "egrid");
+    r.appendChild(editRow("Label", pi.label, function (v) { pi.label = v; }));
+    r.appendChild(editRow("Enabled", pi.enabled ? "1" : "0", function (v) { pi.enabled = v === "1"; }, "select", [["1", "Yes"], ["0", "No"]]));
+    pcard.appendChild(r);
+  });
+  pane.appendChild(pcard);
+
+  var lcard = el("div", "editcard");
+  lcard.appendChild(el("div", "cardhead", "<strong>Discount ceiling</strong>"));
+  var lg = el("div", "egrid");
+  lg.appendChild(editRow("Cap total discount", c.limits.maxTotalDiscountEnabled ? "1" : "0",
+    function (v) { c.limits.maxTotalDiscountEnabled = v === "1"; }, "select", [["0", "No cap"], ["1", "Cap it"]]));
+  lg.appendChild(editRow("Maximum % off", c.limits.maxTotalDiscountPercent, function (v) { c.limits.maxTotalDiscountPercent = v; }, "number"));
+  lcard.appendChild(lg);
+  lcard.appendChild(el("div", "hint", "When capped, no offer can fall below this percentage of the project total no matter how the discounts stack."));
+  pane.appendChild(lcard);
+
+  if (!c.session) c.session = { rememberDuringSit: true, restoreWindowMinutes: 360 };
+  var mcard = el("div", "editcard");
+  mcard.appendChild(el("div", "cardhead", "<strong>Sit memory</strong>"));
+  var mg = el("div", "egrid");
+  mg.appendChild(editRow("Remember the quote", c.session.rememberDuringSit === false ? "0" : "1",
+    function (v) { c.session.rememberDuringSit = v === "1"; }, "select", [["1", "Yes"], ["0", "No"]]));
+  mg.appendChild(editRow("Forget it after", String(c.session.restoreWindowMinutes || 360),
+    function (v) { c.session.restoreWindowMinutes = parseInt(v, 10); }, "select",
+    [["60", "1 hour"], ["180", "3 hours"], ["360", "6 hours"], ["720", "12 hours"]]));
+  mcard.appendChild(mg);
+  mcard.appendChild(el("div", "hint",
+    "Ingage unloads the page when the rep leaves the slide. With this on, the prices, qualifiers and chosen plans come back when they return, so a quote survives being revisited mid-negotiation. " +
+    "It is stored on that one tablet, never sent anywhere, and it is cleared by “Reset for next customer”, by any change to the offers or discounts in this file, and by the timeout above."));
+  pane.appendChild(mcard);
+
+  var scard = el("div", "editcard");
+  scard.appendChild(el("div", "cardhead", "<strong>Administrator password</strong>"));
+  var np = document.createElement("input");
+  np.type = "password"; np.placeholder = "New password (leave blank to keep current)";
+  np.style.cssText = "width:100%;padding:10px;border:1px solid var(--border-strong);border-radius:8px;font-weight:600";
+  var st = el("div", "hint", "");
+  np.addEventListener("change", function () {
+    if (!np.value) return;
+    if (np.value.length < 6) { st.textContent = "Use at least 6 characters."; return; }
+    DRAFT.security.adminHash = sha256(np.value);
+    st.textContent = "New password staged. It takes effect in the exported file.";
+  });
+  scard.appendChild(np);
+  scard.appendChild(st);
+  pane.appendChild(scard);
+}
+
+/* --- Layout ---
+   Every control here writes a CSS variable and repaints the slide behind
+   the panel, so the layout is edited by looking at it rather than by
+   describing it to somebody. */
+function paneLayout(pane) {
+  if (!DRAFT.layout) DRAFT.layout = clone(DEFAULT_CONFIG.layout);
+  migrateLayout(DRAFT.layout);
+  if (!DRAFT.layout.elements) DRAFT.layout.elements = {};
+  var L = DRAFT.layout;
+
+  function live() {
+    CONFIG.layout = clone(DRAFT.layout);
+    applyTheme();
+    renderStage();
+  }
+  function slider(label, get, set, min, max, step, suffix) {
+    var d = el("div");
+    d.appendChild(el("label", null, esc(label)));
+    var row = el("div");
+    row.style.cssText = "display:flex;align-items:center;gap:9px";
+    var r = document.createElement("input");
+    r.type = "range"; r.min = min; r.max = max; r.step = step || 1; r.value = get();
+    r.style.cssText = "flex:1;accent-color:var(--btn)";
+    var out = el("span", null, get() + (suffix || "px"));
+    out.style.cssText = "font-weight:700;font-size:13px;min-width:48px;text-align:right;color:var(--navy-800)";
+    r.addEventListener("input", function () {
+      var v = parseFloat(r.value);
+      set(v); out.textContent = v + (suffix || "px"); live();
+    });
+    row.appendChild(r); row.appendChild(out);
+    d.appendChild(row);
+    return d;
+  }
+
+  pane.appendChild(el("div", "warn",
+    "Pick a piece of text, then change it. The slide behind this panel updates as you go. " +
+    "Nothing is written to a file until you save."));
+
+  /* ---- one dropdown instead of a row per property ---- */
+  var tcard = el("div", "editcard");
+  tcard.appendChild(el("div", "cardhead", "<strong>Text</strong>"));
+
+  var picker = document.createElement("select");
+  picker.style.cssText = "width:100%;padding:11px 12px;border:1px solid var(--border-strong);" +
+    "border-radius:8px;font-weight:700;font-size:15px;background:#fff;margin-bottom:14px";
+  TEXT_ELEMENTS.forEach(function (e) {
+    var o = document.createElement("option");
+    o.value = e.key; o.textContent = e.label;
+    if (e.key === adminTextKey) o.selected = true;
+    picker.appendChild(o);
+  });
+  picker.addEventListener("change", function () { adminTextKey = picker.value; renderAdmin(); });
+  tcard.appendChild(picker);
+
+  var e = textElement(adminTextKey) || TEXT_ELEMENTS[0];
+  if (!L.elements[e.key]) L.elements[e.key] = {};
+  var cur = textStyle(e.key, DRAFT);
+
+  var g = el("div", "egrid");
+  g.appendChild(slider("Size", function () { return cur.size; },
+    function (v) { L.elements[e.key].size = v; cur.size = v; }, e.min, e.max, 0.5));
+
+  var cd = el("div");
+  cd.appendChild(el("label", null, "Colour"));
+  var crow = el("div");
+  crow.style.cssText = "display:flex;align-items:center;gap:8px";
+  var ci = document.createElement("input");
+  ci.type = "color"; ci.value = cur.color;
+  ci.style.cssText = "width:46px;height:38px;padding:2px;border:1px solid var(--border-strong);border-radius:8px;background:#fff";
+  var ct = document.createElement("input");
+  ct.type = "text"; ct.value = cur.color;
+  ct.style.cssText = "flex:1;padding:9px 10px;border:1px solid var(--border-strong);border-radius:8px;font-weight:600;font-size:14px";
+  function setColor(v) { L.elements[e.key].color = v; cur.color = v; live(); }
+  ci.addEventListener("input", function () { ct.value = ci.value; setColor(ci.value); });
+  ct.addEventListener("input", function () {
+    if (/^#[0-9a-fA-F]{6}$/.test(ct.value)) { ci.value = ct.value; setColor(ct.value); }
+  });
+  crow.appendChild(ci); crow.appendChild(ct);
+  cd.appendChild(crow);
+  g.appendChild(cd);
+
+  g.appendChild(editRow("Weight", cur.weight, function (v) { L.elements[e.key].weight = v; live(); }, "select", WEIGHT_CHOICES));
+  g.appendChild(editRow("Font", cur.font, function (v) { L.elements[e.key].font = v; live(); }, "select", FONT_CHOICES));
+  tcard.appendChild(g);
+
+  if (e.clamp) {
+    tcard.appendChild(el("div", "hint",
+      "This one shrinks automatically on narrow screens instead of wrapping, which is what keeps the payment panels level across columns. The size you pick is the largest it will go."));
+  }
+  if (e.key === "paymentAmount") {
+    tcard.appendChild(el("div", "hint", "In \u201cSRP only\u201d mode this scales up on its own to fill the wider column."));
+  }
+
+  var rowbtn = el("div");
+  rowbtn.style.cssText = "display:flex;gap:9px;margin-top:12px;flex-wrap:wrap";
+  var rst = el("button", "ghost-btn", "Reset this text");
+  rst.addEventListener("click", function () { delete L.elements[e.key]; live(); renderAdmin(); });
+  rowbtn.appendChild(rst);
+  var rstAll = el("button", "ghost-btn", "Reset all text");
+  rstAll.addEventListener("click", function () { L.elements = {}; live(); renderAdmin(); });
+  rowbtn.appendChild(rstAll);
+  tcard.appendChild(rowbtn);
+  pane.appendChild(tcard);
+
+  /* ---- structure ---- */
+  var c1 = el("div", "editcard");
+  c1.appendChild(el("div", "cardhead", "<strong>Structure</strong>"));
+  var g1 = el("div", "egrid");
+  g1.appendChild(editRow("Payment block", L.paymentPosition, function (v) { L.paymentPosition = v; live(); }, "select",
+    [["top", "Above the price breakdown"], ["bottom", "Below the price breakdown"]]));
+  g1.appendChild(editRow("Header bar", L.headerBackground || "transparent",
+    function (v) { L.headerBackground = v; live(); }, "select",
+    [["transparent", "Transparent"], ["white", "Solid white"], ["frosted", "Frosted white"], ["navy", "Navy"]]));
+  c1.appendChild(g1);
+  pane.appendChild(c1);
+
+  /* ---- cards and spacing ---- */
+  var c3 = el("div", "editcard");
+  c3.appendChild(el("div", "cardhead", "<strong>Cards and spacing</strong>"));
+  var g3 = el("div", "egrid");
+  g3.appendChild(slider("Corner rounding", function () { return L.cardRadius; }, function (v) { L.cardRadius = v; }, 0, 32));
+  g3.appendChild(slider("Padding inside cards", function () { return L.cardPadding; }, function (v) { L.cardPadding = v; }, 10, 44));
+  g3.appendChild(slider("Gap between cards", function () { return L.gapBetweenCards; }, function (v) { L.gapBetweenCards = v; }, 4, 40));
+  g3.appendChild(slider("Gap between columns", function () { return L.gapBetweenColumns; }, function (v) { L.gapBetweenColumns = v; }, 6, 52));
+  c3.appendChild(g3);
+  pane.appendChild(c3);
+
+  /* ---- escape hatch ---- */
+  var c4 = el("div", "editcard");
+  c4.appendChild(el("div", "cardhead", "<strong>Custom CSS</strong>"));
+  var ta = document.createElement("textarea");
+  ta.value = L.customCss || "";
+  ta.rows = 7;
+  ta.spellcheck = false;
+  ta.placeholder = ".offer .title { text-transform: uppercase; }";
+  ta.style.cssText = "width:100%;padding:11px;border:1px solid var(--border-strong);border-radius:8px;" +
+    "font-family:Consolas,'Courier New',monospace;font-size:13px;line-height:1.6;background:#fff;resize:vertical";
+  ta.addEventListener("input", function () { L.customCss = ta.value; live(); });
+  c4.appendChild(ta);
+  c4.appendChild(el("div", "hint",
+    "For anything the controls above do not reach. It applies as you type and saves with the file. " +
+    "Useful selectors: <code>.offer</code> a whole column, <code>.finance</code> the navy payment card, " +
+    "<code>.breakdown</code> the white price card, <code>.btn-fin</code> the financing button, <code>.hdr</code> the top bar."));
+  pane.appendChild(c4);
+
+  var dcard = el("div", "editcard");
+  dcard.appendChild(el("div", "cardhead", "<strong>Saving</strong>"));
+  var drow = el("div");
+  drow.style.cssText = "display:flex;gap:8px;flex-wrap:wrap";
+  var keep = el("button", "solid-btn", "Keep this look on this device");
+  keep.addEventListener("click", function () {
+    CONFIG.layout = clone(DRAFT.layout);
+    setStatus(saveLayoutLocal()
+      ? "Saved on this device. It survives reloads here, but reps see the file until you publish a package."
+      : "This browser refuses local storage, so publish a package instead.");
+    renderAdmin();
+  });
+  drow.appendChild(keep);
+  if (hasLayoutLocal()) {
+    var drop = el("button", "ghost-btn", "Forget the device copy");
+    drop.addEventListener("click", function () {
+      clearLayoutLocal();
+      setStatus("Device copy removed. Reload to go back to the file's own look.");
+      renderAdmin();
+    });
+    drow.appendChild(drop);
+  }
+  dcard.appendChild(drow);
+  dcard.appendChild(el("div", "hint",
+    hasLayoutLocal()
+      ? "<strong>This device is using its own saved look.</strong> Reps still see whatever is in the file. Publish a package to make it theirs."
+      : "Use this while you are still deciding. It keeps the look on this machine without publishing anything. Prices, discounts and financing always come from the file, never from a device."));
+  pane.appendChild(dcard);
+
+  var reset = el("button", "ghost-btn", "Reset the whole layout");
+  reset.addEventListener("click", function () {
+    DRAFT.layout = clone(DEFAULT_CONFIG.layout);
+    migrateLayout(DRAFT.layout);
+    live(); renderAdmin();
+  });
+  pane.appendChild(reset);
+}
+
+/* --- Discounts --- */
+function paneDiscounts(pane) {
+  pane.appendChild(el("div", "warn",
+    "Percentages stack progressively: each one comes off the running subtotal, not the original price. That is how the current Ingage calculator behaves, and the order below is the order they apply within an offer."));
+
+  DRAFT.discounts.forEach(function (d, i) {
+    var card = el("div", "editcard");
+    var h = el("div", "cardhead");
+    h.appendChild(el("strong", null, esc(d.name || "Untitled discount")));
+    var del = el("button", "danger-btn", "Delete");
+    del.addEventListener("click", function () {
+      if (!confirm("Delete \"" + d.name + "\"? It will also be removed from every offer that uses it.")) return;
+      DRAFT.discounts.splice(i, 1);
+      DRAFT.offers.forEach(function (o) {
+        o.discounts = o.discounts.filter(function (x) { return x !== d.id; });
+      });
+      renderAdmin();
+    });
+    h.appendChild(del);
+    card.appendChild(h);
+
+    var g = el("div", "egrid");
+    g.appendChild(editRow("Name", d.name, function (v) { d.name = v; }));
+    g.appendChild(editRow("Type", d.mode, function (v) { d.mode = v; }, "select", [["CASH", "Dollar amount"], ["PERCENTAGE", "Percentage"]]));
+    g.appendChild(editRow("Direction", d.method, function (v) { d.method = v; }, "select", [["SUBTRACT", "Subtract"], ["ADD", "Add"]]));
+    g.appendChild(editRow("Value", d.value, function (v) { d.value = v; }, "number"));
+    var targets = [["TOTAL", "Project Total"]].concat(DRAFT.priceInputs.map(function (p) { return [p.id, p.label]; }));
+    g.appendChild(editRow("Applies to", d.target, function (v) { d.target = v; }, "select", targets));
+    g.appendChild(editRow("Rep can toggle", d.repToggleable ? "1" : "0", function (v) { d.repToggleable = v === "1"; }, "select", [["1", "Yes"], ["0", "No, always on"]]));
+    g.appendChild(editRow("On by default", d.defaultOn ? "1" : "0", function (v) { d.defaultOn = v === "1"; }, "select", [["1", "Yes"], ["0", "No"]]));
+    g.appendChild(editRow("Rep slider", d.repAdjustable ? "1" : "0", function (v) { d.repAdjustable = v === "1"; renderAdmin(); }, "select", [["0", "No"], ["1", "Yes"]]));
+    if (d.repAdjustable) g.appendChild(editRow("Slider cap %", d.repMax || 10, function (v) { d.repMax = v; }, "number"));
+    card.appendChild(g);
+    pane.appendChild(card);
+  });
+
+  var add = el("button", "solid-btn", "+ Add discount");
+  add.addEventListener("click", function () {
+    DRAFT.discounts.push({
+      id: uid("d"), name: "New discount", mode: "PERCENTAGE", method: "SUBTRACT",
+      value: 5, target: "TOTAL", repToggleable: true, defaultOn: false
+    });
+    renderAdmin();
+  });
+  pane.appendChild(add);
+}
+
+/* --- Financing --- */
+function paneFinancing(pane) {
+  var card = el("div", "editcard");
+  card.appendChild(el("div", "cardhead", "<strong>What the homeowner sees in the financing table</strong>"));
+  var g = el("div", "egrid");
+  g.appendChild(editRow("Monthly payments", DRAFT.financing.showMonthlyPayments ? "1" : "0", function (v) { DRAFT.financing.showMonthlyPayments = v === "1"; }, "select", [["1", "Show"], ["0", "Hide"]]));
+  g.appendChild(editRow("Term length", DRAFT.financing.showTerm ? "1" : "0", function (v) { DRAFT.financing.showTerm = v === "1"; }, "select", [["0", "Hide"], ["1", "Show"]]));
+  g.appendChild(editRow("Interest rate", DRAFT.financing.showRate ? "1" : "0", function (v) { DRAFT.financing.showRate = v === "1"; }, "select", [["0", "Hide"], ["1", "Show"]]));
+  card.appendChild(g);
+  card.appendChild(el("div", "hint",
+    "Term and rate stay hidden from the homeowner by default. The rep still sees both in the Pricing panel when choosing which payment to show. " +
+    "While they are hidden, plans that share a customer-facing name are listed once, at the best payment."));
+  var dis = el("div");
+  dis.style.marginTop = "10px";
+  dis.appendChild(el("label", null, "<strong style='font-size:13px'>Footnote under the table</strong>"));
+  var di = document.createElement("input");
+  di.type = "text";
+  di.value = DRAFT.financing.disclaimer || "";
+  di.style.cssText = "width:100%;padding:9px 10px;border:1px solid var(--border-strong);border-radius:8px;font-weight:600;font-size:14px;margin-top:5px";
+  di.addEventListener("input", function () { DRAFT.financing.disclaimer = di.value; });
+  dis.appendChild(di);
+  dis.appendChild(el("div", "hint", "Leave it blank to show no footnote."));
+  card.appendChild(dis);
+  pane.appendChild(card);
+
+  DRAFT.financing.plans.forEach(function (p, i) {
+    var c = el("div", "editcard");
+    var h = el("div", "cardhead");
+    h.appendChild(el("strong", null, esc(p.title || "Untitled plan")));
+    var del = el("button", "danger-btn", "Delete");
+    del.addEventListener("click", function () {
+      if (!confirm("Delete the plan \"" + p.title + "\"?")) return;
+      DRAFT.financing.plans.splice(i, 1);
+      DRAFT.offers.forEach(function (o) {
+        o.plans = o.plans.filter(function (x) { return x !== p.id; });
+        if (o.defaultPlan === p.id) o.defaultPlan = o.plans[0] || null;
+      });
+      renderAdmin();
+    });
+    h.appendChild(del);
+    c.appendChild(h);
+
+    var g2 = el("div", "egrid");
+    g2.appendChild(editRow("Plan name (internal)", p.title, function (v) { p.title = v; }));
+    g2.appendChild(editRow("Name shown to homeowner", p.publicTitle, function (v) { p.publicTitle = v; }));
+    g2.appendChild(editRow("Calculation", p.method, function (v) { p.method = v; renderAdmin(); }, "select",
+      [["TERM_AND_INTEREST_RATE", "Term + rate"], ["PROMO_THEN_TERM", "No-payment promo, then a term"],
+       ["PAYMENT_FACTOR", "Payment factor"],
+       ["PERCENT_OF_TOTAL", "Split payment (% of price)"], ["CUSTOM_VALUE", "Custom text"]]));
+    g2.appendChild(editRow("Months", p.term, function (v) { p.term = v; }, "number"));
+    if (p.method === "TERM_AND_INTEREST_RATE" || p.method === "PROMO_THEN_TERM") g2.appendChild(editRow("Rate %", p.rate, function (v) { p.rate = v; }, "number"));
+    if (p.method === "PROMO_THEN_TERM") {
+      g2.appendChild(editRow("Promo months", p.promoMonths, function (v) { p.promoMonths = v; }, "number"));
+      g2.appendChild(editRow("Badge text", p.promoLabel, function (v) { p.promoLabel = v; }));
+      g2.appendChild(editRow("Quote the payment after", p.showPostPromoPayment === false ? "0" : "1",
+        function (v) { p.showPostPromoPayment = v === "1"; renderAdmin(); }, "select",
+        [["1", "Yes, show the monthly"], ["0", "No, show $0"]]));
+      if (p.showPostPromoPayment === false) g2.appendChild(editRow("Headline label", p.headlineLabel, function (v) { p.headlineLabel = v; }));
+    }
+    if (p.method === "PAYMENT_FACTOR") g2.appendChild(editRow("Factor", p.factor, function (v) { p.factor = v; }, "number"));
+    if (p.method === "PERCENT_OF_TOTAL") {
+      g2.appendChild(editRow("Percent due up front", p.percent, function (v) { p.percent = v; }, "number"));
+      g2.appendChild(editRow("Headline label", p.headlineLabel, function (v) { p.headlineLabel = v; }));
+      g2.appendChild(editRow("Remainder wording", p.remainderLabel, function (v) { p.remainderLabel = v; }));
+    } else {
+      g2.appendChild(editRow("Minimum down payment %", p.downPercent || 0, function (v) { p.downPercent = v; }, "number"));
+    }
+    if (p.method !== "PERCENT_OF_TOTAL") g2.appendChild(editRow("Custom payment text", p.custom, function (v) { p.custom = v; }));
+    c.appendChild(g2);
+    c.appendChild(el("div", "hint",
+      p.method === "PROMO_THEN_TERM" ? "Months and Rate describe the plan after the promo ends, not the promo itself. Set \"Quote the payment after\" to No for a promotion sold on being paid off before interest starts: the rate is still recorded and shown to the rep, but the homeowner sees $0 rather than a monthly built on a rate nobody intends to pay."
+      : p.method === "TERM_AND_INTEREST_RATE" ? "Standard amortization on the price less the down payment. A minimum down payment above 0 is applied even when the rep enters nothing; whatever the homeowner puts down wins if it is larger."
+      : p.method === "PAYMENT_FACTOR" ? "Payment = amount financed × factor. Leave the factor at 0 to display the custom text instead, which is how the no-payment promotions show $0."
+      : p.method === "PERCENT_OF_TOTAL" ? "Headlines the dollar amount due up front and states the balance underneath. At 50% on a $22,000 project that reads $11,000 due at signing, then $11,000 upon completion. It ignores the down payment field."
+      : "Displays the custom text and nothing else."));
+    pane.appendChild(c);
+  });
+
+  var add = el("button", "solid-btn", "+ Add financing plan");
+  add.addEventListener("click", function () {
+    DRAFT.financing.plans.push({ id: uid("p"), title: "New plan", method: "TERM_AND_INTEREST_RATE", term: 120, rate: 9.99, factor: 0, custom: "", dealerFee: 0, planCode: "" });
+    renderAdmin();
+  });
+  pane.appendChild(add);
+}
+
+/* --- Offers --- */
+function paneOffers(pane) {
+  DRAFT.offers.forEach(function (o, i) {
+    var c = el("div", "editcard");
+    var h = el("div", "cardhead");
+    h.appendChild(el("strong", null, esc(o.title || "Untitled offer")));
+    var ctrls = el("div");
+    ctrls.style.cssText = "display:flex;gap:8px";
+    if (i > 0) {
+      var up = el("button", "ghost-btn", "←");
+      up.addEventListener("click", function () { var t = DRAFT.offers[i - 1]; DRAFT.offers[i - 1] = o; DRAFT.offers[i] = t; renderAdmin(); });
+      ctrls.appendChild(up);
+    }
+    if (i < DRAFT.offers.length - 1) {
+      var dn = el("button", "ghost-btn", "→");
+      dn.addEventListener("click", function () { var t = DRAFT.offers[i + 1]; DRAFT.offers[i + 1] = o; DRAFT.offers[i] = t; renderAdmin(); });
+      ctrls.appendChild(dn);
+    }
+    var del = el("button", "danger-btn", "Delete");
+    del.addEventListener("click", function () {
+      if (!confirm("Delete the offer \"" + o.title + "\"?")) return;
+      DRAFT.offers.splice(i, 1); renderAdmin();
+    });
+    ctrls.appendChild(del);
+    h.appendChild(ctrls);
+    c.appendChild(h);
+
+    var g = el("div", "egrid");
+    g.appendChild(editRow("Title", o.title, function (v) { o.title = v; }));
+    g.appendChild(editRow("Subtitle", o.subtitle, function (v) { o.subtitle = v; }));
+    g.appendChild(editRow("Total label", o.totalLabel, function (v) { o.totalLabel = v; }));
+    g.appendChild(editRow("Button text", o.financingButtonTitle, function (v) { o.financingButtonTitle = v; }));
+    g.appendChild(editRow("Shown at open", o.showByDefault ? "1" : "0", function (v) { o.showByDefault = v === "1"; }, "select", [["1", "Yes"], ["0", "No"]]));
+    g.appendChild(editRow("Rep can reveal", o.repToggleable ? "1" : "0", function (v) { o.repToggleable = v === "1"; }, "select", [["1", "Yes"], ["0", "No, always on"]]));
+    g.appendChild(editRow("Show “You Save”", o.showYouSave ? "1" : "0", function (v) { o.showYouSave = v === "1"; }, "select", [["1", "Yes"], ["0", "No"]]));
+    g.appendChild(editRow("Show-only button", o.focusable === false ? "0" : "1", function (v) { o.focusable = v === "1"; renderAdmin(); }, "select", [["1", "Yes"], ["0", "No"]]));
+    if (o.focusable !== false) g.appendChild(editRow("Show-only button text", o.focusLabel, function (v) { o.focusLabel = v; }));
+    g.appendChild(editRow("Headline plan", o.defaultPlan, function (v) { o.defaultPlan = v; }, "select",
+      o.plans.map(function (pid) { var p = planIn(DRAFT, pid); return [pid, p ? p.title : pid]; })));
+    c.appendChild(g);
+
+    c.appendChild(el("div", "hint", "<strong>Discounts applied, in stacking order.</strong> Click to add or remove."));
+    var dchips = el("div", "chips");
+    DRAFT.discounts.forEach(function (d) {
+      var on = o.discounts.indexOf(d.id) >= 0;
+      var chip = el("button", "chip" + (on ? " on" : ""), esc(d.name));
+      chip.addEventListener("click", function () {
+        if (on) o.discounts = o.discounts.filter(function (x) { return x !== d.id; });
+        else o.discounts.push(d.id);
+        renderAdmin();
+      });
+      dchips.appendChild(chip);
+    });
+    c.appendChild(dchips);
+
+    c.appendChild(el("div", "hint", "<strong>Financing plans offered here.</strong>"));
+    var pchips = el("div", "chips");
+    DRAFT.financing.plans.forEach(function (p) {
+      var on = o.plans.indexOf(p.id) >= 0;
+      var chip = el("button", "chip" + (on ? " on" : ""), esc(p.title) + (p.method === "TERM_AND_INTEREST_RATE" ? " (" + p.term + "mo)" : ""));
+      chip.addEventListener("click", function () {
+        if (on) {
+          o.plans = o.plans.filter(function (x) { return x !== p.id; });
+          if (o.defaultPlan === p.id) o.defaultPlan = o.plans[0] || null;
+        } else o.plans.push(p.id);
+        renderAdmin();
+      });
+      pchips.appendChild(chip);
+    });
+    c.appendChild(pchips);
+    pane.appendChild(c);
+  });
+
+  var add = el("button", "solid-btn", "+ Add offer");
+  add.addEventListener("click", function () {
+    DRAFT.offers.push({
+      id: uid("o"), title: "New Offer", subtitle: "", totalLabel: "Project Total",
+      financingButtonTitle: "Financing Options", showByDefault: false, repToggleable: true,
+      showYouSave: true, discounts: [], plans: [], defaultPlan: null
+    });
+    renderAdmin();
+  });
+  pane.appendChild(add);
+}
+
+function planIn(cfg, id) {
+  for (var i = 0; i < cfg.financing.plans.length; i++) if (cfg.financing.plans[i].id === id) return cfg.financing.plans[i];
+  return null;
+}
+
+/* ============================================================
+   9. Export
+   ============================================================ */
+function serializeConfig(cfg) {
+  return JSON.stringify(cfg, null, 2).replace(/</g, "\\u003c");
+}
+
+function buildExportHtml() {
+  CONFIG = clone(DRAFT);
+  applyTheme();
+  resetSession();
+  renderDrawer();
+  renderStage();
+
+  var start = PRISTINE_HTML.indexOf("/*PK_CONFIG_START*/");
+  var end = PRISTINE_HTML.indexOf("/*PK_CONFIG_END*/");
+  if (start < 0 || end < 0) { alert("Could not locate the configuration block. Nothing was saved."); return null; }
+
+  return PRISTINE_HTML.slice(0, start + "/*PK_CONFIG_START*/".length) +
+    "\n" + serializeConfig(CONFIG) + "\n" +
+    PRISTINE_HTML.slice(end);
+}
+
+function download(blob, filename) {
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+}
+
+function exportHtml() {
+  clearSit();
+  clearLayoutLocal();
+  var out = buildExportHtml();
+  if (out === null) return;
+  download(new Blob([out], { type: "text/html" }), "index.html");
+  clearDirty();
+  setStatus("Saved as index.html. Zip it before uploading to Ingage, or use the .zip button instead.");
+}
+
+/* ---- Ingage package ----------------------------------------------------
+   Ingage wants a zip with index.html at its root. Producing it here saves a
+   rename-and-compress round trip that is easy to get wrong, and the file
+   only ever needs storing, never compressing, so no library is required. */
+function crc32(bytes) {
+  var table = crc32.table;
+  if (!table) {
+    table = crc32.table = new Int32Array(256);
+    for (var n = 0; n < 256; n++) {
+      var c = n;
+      for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      table[n] = c;
+    }
+  }
+  var crc = -1;
+  for (var i = 0; i < bytes.length; i++) crc = (crc >>> 8) ^ table[(crc ^ bytes[i]) & 0xFF];
+  return (crc ^ -1) >>> 0;
+}
+
+function buildZip(name, text) {
+  var enc = new TextEncoder();
+  var data = enc.encode(text);
+  var nameBytes = enc.encode(name);
+  var crc = crc32(data);
+  var d = new Date();
+  var dosTime = ((d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)) & 0xFFFF;
+  var dosDate = ((((d.getFullYear() - 1980) & 0x7F) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()) & 0xFFFF;
+
+  function u16(v) { return [v & 255, (v >>> 8) & 255]; }
+  function u32(v) { return [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255]; }
+
+  var local = [].concat([0x50, 0x4b, 0x03, 0x04], u16(20), u16(0x0800), u16(0),
+    u16(dosTime), u16(dosDate), u32(crc), u32(data.length), u32(data.length),
+    u16(nameBytes.length), u16(0));
+  var central = [].concat([0x50, 0x4b, 0x01, 0x02], u16(20), u16(20), u16(0x0800), u16(0),
+    u16(dosTime), u16(dosDate), u32(crc), u32(data.length), u32(data.length),
+    u16(nameBytes.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(0));
+
+  var localLen = local.length + nameBytes.length + data.length;
+  var centralLen = central.length + nameBytes.length;
+  var end = [].concat([0x50, 0x4b, 0x05, 0x06], u16(0), u16(0), u16(1), u16(1),
+    u32(centralLen), u32(localLen), u16(0));
+
+  var out = new Uint8Array(localLen + centralLen + end.length);
+  var o = 0;
+  function push(arr) { out.set(arr, o); o += arr.length; }
+  push(new Uint8Array(local)); push(nameBytes); push(data);
+  push(new Uint8Array(central)); push(nameBytes);
+  push(new Uint8Array(end));
+  return new Blob([out], { type: "application/zip" });
+}
+
+function exportZip() {
+  clearSit();
+  clearLayoutLocal();
+  var out = buildExportHtml();
+  if (out === null) return;
+  download(buildZip("index.html", out), "investment-guide-ingage.zip");
+  clearDirty();
+  setStatus("Saved as investment-guide-ingage.zip, ready to upload to Ingage as is.");
+}
+
+/* ============================================================
+   10. Modals + wiring
+   ============================================================ */
+function openModal(id) { $(id).classList.add("on"); }
+function closeModal(id) { $(id).classList.remove("on"); }
+
+document.addEventListener("click", function (e) {
+  if (!e.target.closest) return;
+  var m = e.target.closest("[data-close-modal]");
+  if (m) closeModal(m.getAttribute("data-close-modal"));
+  if (e.target.closest("[data-close-drawer]")) closeDrawer();
+});
+document.querySelectorAll(".modal").forEach(function (m) {
+  m.addEventListener("click", function (e) { if (e.target === m) m.classList.remove("on"); });
+});
+
+function openDrawer() { renderDrawer(); $("drawer").classList.add("on"); $("scrim").classList.add("on"); }
+function closeDrawer() { $("drawer").classList.remove("on"); $("scrim").classList.remove("on"); }
+
+$("openDrawer").addEventListener("click", openDrawer);
+$("scrim").addEventListener("click", closeDrawer);
+$("resetSession").addEventListener("click", function () {
+  clearSit(); resetSession(); renderDrawer(); renderStage();
+  setStatus("");
+});
+$("openAdmin").addEventListener("click", function () { closeDrawer(); openAdmin(); });
+["input", "change"].forEach(function (evt) {
+  $("adminBody").addEventListener(evt, markDirty);
+});
+$("adminLock").addEventListener("click", function () {
+  if (adminDirty && !confirm("These changes have not been saved to a file. Lock anyway and lose them?")) return;
+  adminUnlocked = false; DRAFT = null; clearDirty(); closeModal("adminModal");
+});
+$("revertBtn").addEventListener("click", function () {
+  DRAFT = clone(CONFIG); clearDirty(); renderAdmin(); setStatus("Reverted to the loaded configuration.");
+});
+$("exportBtn").addEventListener("click", exportZip);
+$("exportHtmlBtn").addEventListener("click", exportHtml);
+
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape") {
+    document.querySelectorAll(".modal.on").forEach(function (m) { m.classList.remove("on"); });
+    closeDrawer();
+  }
+  if (e.ctrlKey && e.shiftKey && (e.key === "A" || e.key === "a")) { e.preventDefault(); openAdmin(); }
+});
+
+/* ============================================================
+   11. Boot
+   ============================================================ */
+window.__pkBoot = function () {
+  loadLayoutLocal();
+  resetSession();
+  loadSit();
+  applyTheme();
+  renderStage();
+};
+
+})();
+</script>
+
+<script>
+"use strict";
+/* Runs last, so the snapshot contains the complete file and nothing the
+   app has rendered. Export reuses it verbatim apart from the config block. */
+PRISTINE_HTML = "<!doctype html>\n" + document.documentElement.outerHTML;
+window.__pkBoot();
+</script>
+</body>
+</html>
