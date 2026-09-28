@@ -210,14 +210,6 @@ input,select{font-family:inherit;font-size:16px;color:var(--navy-800)}
 .total .v{font-size:38px;font-weight:700;letter-spacing:-.025em;line-height:1.05;color:var(--navy-800);white-space:nowrap}
 .save{font-size:16px;font-weight:700;color:var(--credit);margin-top:6px}
 
-.costco{margin-top:14px;padding:14px 16px;border:1px solid var(--border-strong);border-radius:var(--radius-md);background:var(--mist)}
-.costco .k{font-size:14px;font-weight:600;color:var(--slate-600)}
-.costco .v{font-size:24px;font-weight:700;color:var(--navy-800);letter-spacing:-.01em;margin-top:2px}
-.costco .note{font-size:12px;font-weight:500;color:var(--slate-600);margin-top:6px;line-height:1.4}
-.costco .final{margin-top:10px;padding-top:10px;border-top:1px solid var(--border-strong);display:flex;justify-content:space-between;align-items:baseline;gap:14px}
-.costco .final .k{font-size:14px;font-weight:700;color:var(--slate-600);margin-top:0}
-.costco .final .v{font-size:22px;font-weight:700;color:var(--credit);margin-top:0;white-space:nowrap}
-
 .offer .foot{margin-top:auto;display:flex;flex-direction:column;gap:11px}
 .btn-fin{
   width:100%;background:var(--btn);color:#fff;font-weight:700;font-size:17px;
@@ -477,8 +469,7 @@ table.fin td.pay{font-weight:700;font-size:19px;white-space:nowrap}
     "enabled": true,
     "toggleLabel": "Costco Member",
     "lineLabel": "Costco Shop Card",
-    "finalTotalLabel": "Final Project Total",
-    "noteText": "",
+    "nonJacuzziLabel": "Non-Jacuzzi item cost (already included above)",
     "shopCardPercent": 10,
     "materialsPercent": 80,
     "taxRatePercent": 6,
@@ -508,26 +499,22 @@ table.fin td.pay{font-weight:700;font-size:19px;white-space:nowrap}
     {
       "id": "priceInput0",
       "label": "Project 1",
-      "enabled": true,
-      "costcoEligible": true
+      "enabled": true
     },
     {
       "id": "priceInput1",
       "label": "Project 2",
-      "enabled": true,
-      "costcoEligible": true
+      "enabled": true
     },
     {
       "id": "priceInput2",
-      "label": "Non-Jacuzzi Door",
-      "enabled": true,
-      "costcoEligible": false
+      "label": "Project 3",
+      "enabled": false
     },
     {
       "id": "priceInput3",
       "label": "Project 4",
-      "enabled": false,
-      "costcoEligible": true
+      "enabled": false
     }
   ],
   "discounts": [
@@ -865,7 +852,7 @@ function uid(p) { return p + "-" + Math.floor(Math.random() * 1e9).toString(36);
    ============================================================ */
 var S = {};
 function resetSession() {
-  S = { inputs: {}, deposit: 0, toggles: {}, marketing: 0, shown: {}, plan: {}, focus: null, costco: false };
+  S = { inputs: {}, deposit: 0, toggles: {}, marketing: 0, shown: {}, plan: {}, focus: null, costco: false, nonJacuzziAmount: 0 };
   CONFIG.priceInputs.forEach(function (pi) { S.inputs[pi.id] = 0; });
   CONFIG.discounts.forEach(function (d) { S.toggles[d.id] = !!d.defaultOn; });
   CONFIG.discounts.forEach(function (d) { if (d.repAdjustable) S.marketing = 0; });
@@ -1020,20 +1007,13 @@ function baseTotal() {
   return t;
 }
 
-/* Some price inputs are not Jacuzzi product (a non-Jacuzzi glass door, for
-   instance) and Costco's shop card cannot be figured on them, since Costco
-   and Jacuzzi's partnership does not extend to that spend. */
+/* The non-Jacuzzi amount (a glass door, say) is a reference number only.
+   It is already included in the price the rep typed into a price input
+   above, so it is never added again here; it exists purely to tell the
+   Costco math how much of that price to leave out, since Costco and
+   Jacuzzi's partnership does not extend to that spend. */
 function costcoEligibleBaseTotal() {
-  var t = 0;
-  CONFIG.priceInputs.forEach(function (pi) {
-    if (pi.enabled && pi.costcoEligible !== false) t += Number(S.inputs[pi.id] || 0);
-  });
-  return t;
-}
-
-function priceInputFor(id) {
-  for (var i = 0; i < CONFIG.priceInputs.length; i++) if (CONFIG.priceInputs[i].id === id) return CONFIG.priceInputs[i];
-  return null;
+  return Math.max(baseTotal() - Number(S.nonJacuzziAmount || 0), 0);
 }
 
 function discountAmount(d, running) {
@@ -1046,12 +1026,10 @@ function discountAmount(d, running) {
 function computeOffer(offer) {
   var base = baseTotal();
   var running = base;
-  /* Tracked in parallel, dollar for dollar, so a non-Jacuzzi item (a glass
-     door Costco and Jacuzzi's partnership does not cover) neither soaks up
-     discount meant for it nor donates discount to the Jacuzzi materials.
-     A TOTAL discount is split across the two in whatever ratio currently
-     holds; a discount aimed at one specific price input passes straight
-     through to costcoRunning only when that input is itself eligible. */
+  /* Tracked in parallel, dollar for dollar: every discount (whichever price
+     input it targets) is assumed to land on Jacuzzi and non-Jacuzzi spend
+     in the same ratio the project starts in, so the ratio holds all the
+     way through to where the Costco Shop Card itself is figured. */
   var costcoRunning = costcoEligibleBaseTotal();
   var lines = [];
 
@@ -1069,38 +1047,38 @@ function computeOffer(offer) {
 
     var amt = discountAmount(d, running);
     var delta = (d.method === "ADD" ? amt : -amt);
-
-    if (d.target === "TOTAL") {
-      var share = running !== 0 ? (costcoRunning / running) : 0;
-      costcoRunning += delta * share;
-    } else {
-      var pi = priceInputFor(d.target);
-      if (pi && pi.enabled && pi.costcoEligible !== false) costcoRunning += delta;
-    }
+    var share = running !== 0 ? (costcoRunning / running) : 0;
+    costcoRunning += delta * share;
 
     running += delta;
     lines.push({ name: d.name, amount: amt, method: d.method });
   });
 
+  /* Costco Shop Card: a real discount line like any other, so it runs
+     last (after every other discount) and folds straight into the same
+     total, financed amount and payment as the rest of the stack. Turning
+     the Costco toggle off drops the line and the total goes back to
+     normal, which is the rep's way to leave it off a presentation. */
+  if (costcoActive && offer.costcoEligible) {
+    var cardAmt = costcoShopCard(costcoRunning);
+    if (cardAmt > 0) {
+      running -= cardAmt;
+      lines.push({ name: (CONFIG.costco && CONFIG.costco.lineLabel) || "Costco Shop Card", amount: cardAmt, method: "SUBTRACT" });
+    }
+  }
+
   // Optional cap on cumulative discount
   if (CONFIG.limits.maxTotalDiscountEnabled && base > 0) {
     var floor = base * (1 - Number(CONFIG.limits.maxTotalDiscountPercent || 0) / 100);
-    if (running < floor) {
-      var scale = running !== 0 ? floor / running : 0;
-      costcoRunning *= scale;
-      running = floor;
-    }
+    if (running < floor) running = floor;
   }
   if (running < 0) running = 0;
-  if (costcoRunning < 0) costcoRunning = 0;
-  if (costcoRunning > running) costcoRunning = running; // guards float drift, never more eligible than total
 
   var deposit = Math.min(Number(S.deposit || 0), running);
   return {
     base: base,
     lines: lines,
     total: running,
-    costcoTotal: costcoRunning,
     saved: base - running,
     deposit: deposit,
     financed: Math.max(running - deposit, 0)
@@ -1514,24 +1492,6 @@ function renderOffer(offer) {
   tot.appendChild(el("div", "v", money(r.total)));
   if (offer.showYouSave && r.saved > 0) tot.appendChild(el("div", "save", "You Save " + money(r.saved)));
   bp.appendChild(tot);
-
-  if (offer.costcoEligible && S.costco) {
-    var ccAmount = costcoShopCard(r.costcoTotal);
-    if (ccAmount > 0) {
-      var cbox = el("div", "costco");
-      cbox.appendChild(el("div", "k", esc((CONFIG.costco && CONFIG.costco.lineLabel) || "Costco Shop Card")));
-      cbox.appendChild(el("div", "v", money(ccAmount)));
-      if (CONFIG.costco && CONFIG.costco.noteText) cbox.appendChild(el("div", "note", esc(CONFIG.costco.noteText)));
-      /* The shop card is not a price cut on the contract itself, but the
-         homeowner still nets it against their cost, so it earns its own
-         "what this really comes to" line under the incentive amount. */
-      var frow = el("div", "final");
-      frow.appendChild(el("div", "k", esc((CONFIG.costco && CONFIG.costco.finalTotalLabel) || "Final Project Total")));
-      frow.appendChild(el("div", "v", money(Math.max(r.total - ccAmount, 0))));
-      cbox.appendChild(frow);
-      bp.appendChild(cbox);
-    }
-  }
   /* Payment above the breakdown by default, which is what makes it the
      focal point. Administrator can put it below instead. */
   if ((CONFIG.layout && CONFIG.layout.paymentPosition) === "bottom") {
@@ -1748,8 +1708,19 @@ function renderDrawer() {
       CONFIG.costco.toggleLabel || "Costco Member",
       replaced ? ("Shop Card replaces " + replaced.name + " on eligible offers") : "Adds the Costco Shop Card line to eligible offers",
       S.costco,
-      function (on) { S.costco = on; renderStage(); }
+      function (on) { S.costco = on; renderDrawer(); renderStage(); }
     ));
+    /* Only relevant, so only shown, once the rep has actually turned Costco
+       on. The amount is a reference number, not an addition: it is already
+       inside the price entered above, and exists only to tell the Costco
+       math what to leave out. */
+    if (S.costco) {
+      gC.appendChild(moneyField(
+        CONFIG.costco.nonJacuzziLabel || "Non-Jacuzzi item cost (already included above)",
+        S.nonJacuzziAmount,
+        function (v) { S.nonJacuzziAmount = v; renderStage(); }
+      ));
+    }
     box.appendChild(gC);
   }
 
@@ -2066,13 +2037,8 @@ function paneGeneral(pane) {
     var r = el("div", "egrid");
     r.appendChild(editRow("Label", pi.label, function (v) { pi.label = v; }));
     r.appendChild(editRow("Enabled", pi.enabled ? "1" : "0", function (v) { pi.enabled = v === "1"; }, "select", [["1", "Yes"], ["0", "No"]]));
-    r.appendChild(editRow("Costco Shop Card eligible", pi.costcoEligible === false ? "0" : "1", function (v) { pi.costcoEligible = v === "1"; }, "select", [["1", "Yes"], ["0", "No, e.g. a non-Jacuzzi item"]]));
     pcard.appendChild(r);
   });
-  pcard.appendChild(el("div", "hint",
-    "Mark a box “No” for anything that is not Jacuzzi product, such as a non-Jacuzzi glass door. " +
-    "Costco and Jacuzzi's partnership does not cover that spend, so it is left out of the Costco Shop Card math " +
-    "while still counting toward the project total and every other discount."));
   pane.appendChild(pcard);
 
   var lcard = el("div", "editcard");
@@ -2524,7 +2490,7 @@ function paneCostco(pane) {
   if (!DRAFT.costco) {
     DRAFT.costco = {
       enabled: true, toggleLabel: "Costco Member", lineLabel: "Costco Shop Card",
-      finalTotalLabel: "Final Project Total", noteText: "",
+      nonJacuzziLabel: "Non-Jacuzzi item cost (already included above)",
       shopCardPercent: 10, materialsPercent: 80, taxRatePercent: 6, replacesDiscountId: ""
     };
   }
@@ -2535,7 +2501,7 @@ function paneCostco(pane) {
   g.appendChild(editRow("Enabled", c.enabled ? "1" : "0", function (v) { c.enabled = v === "1"; }, "select", [["1", "Yes"], ["0", "No"]]));
   g.appendChild(editRow("Rep toggle label", c.toggleLabel, function (v) { c.toggleLabel = v; }));
   g.appendChild(editRow("Line label on the price card", c.lineLabel, function (v) { c.lineLabel = v; }));
-  g.appendChild(editRow("Final total label", c.finalTotalLabel, function (v) { c.finalTotalLabel = v; }));
+  g.appendChild(editRow("Non-Jacuzzi amount field label", c.nonJacuzziLabel, function (v) { c.nonJacuzziLabel = v; }));
   g.appendChild(editRow("Shop card %", c.shopCardPercent, function (v) { c.shopCardPercent = v; }, "number"));
   g.appendChild(editRow("Materials share of price %", c.materialsPercent, function (v) { c.materialsPercent = v; }, "number"));
   g.appendChild(editRow("Sales tax rate %", c.taxRatePercent, function (v) { c.taxRatePercent = v; }, "number"));
@@ -2549,27 +2515,17 @@ function paneCostco(pane) {
     "the shop card stands in for (Soak Up Savings, by default): wherever that discount would normally apply, " +
     "toggling a customer as a Costco member skips it instead, on every offer that uses it."));
 
-  var note = el("div");
-  note.style.marginTop = "10px";
-  note.appendChild(el("label", null, "<strong style='font-size:13px'>Fine print under the amount</strong>"));
-  var ni = document.createElement("input");
-  ni.type = "text";
-  ni.value = c.noteText || "";
-  ni.style.cssText = "width:100%;padding:9px 10px;border:1px solid var(--border-strong);border-radius:8px;font-weight:600;font-size:14px;margin-top:5px";
-  ni.addEventListener("input", function () { c.noteText = ni.value; });
-  note.appendChild(ni);
-  note.appendChild(el("div", "hint", "Leave it blank to show no fine print."));
-  card.appendChild(note);
-
   card.appendChild(el("div", "hint",
-    "Costco math runs last, after every other discount, against whichever total an offer already landed on. " +
-    "Labor is the labor share of that total, untaxed; materials is the rest of the total, with its own tax " +
-    "already included. Michigan taxes materials but not labor, so the calculator knocks the tax back out of " +
-    "the materials share before taking the shop card percentage of the two shares combined. The final total " +
-    "line nets the shop card against the price so a homeowner can see what it comes to, even though the shop " +
-    "card itself is a separate Costco payout, not a change to the signed contract price. " +
+    "Costco math runs last, as a real discount line right alongside every other one, against whichever total " +
+    "an offer already landed on. Labor is the labor share of that total, untaxed; materials is the rest of the " +
+    "total, with its own tax already included. Michigan taxes materials but not labor, so the calculator knocks " +
+    "the tax back out of the materials share before taking the shop card percentage of the two shares combined. " +
+    "It folds straight into the one project total, the financed amount and the payment shown, exactly like any " +
+    "other discount, so turning the Costco toggle off is how a rep leaves it off a presentation entirely. " +
     "Turn an offer on or off for this in the Offers tab, under “Costco Shop Card eligible.” " +
-    "The rep switches it on per customer from the top of the Pricing panel during the sit."));
+    "The rep switches membership on per customer from the top of the Pricing panel, where a Non-Jacuzzi amount " +
+    "field also appears: that number is already included in the price entered above, so it is never added " +
+    "again, it only tells this math what to leave out."));
   pane.appendChild(card);
 }
 
