@@ -550,7 +550,7 @@ table.fin td.pay{font-weight:700;font-size:19px;white-space:nowrap}
     },
     {
       "id": "d-soak",
-      "name": "Soak Up Savings",
+      "name": "Fall Into Savings",
       "mode": "PERCENTAGE",
       "method": "SUBTRACT",
       "value": 10,
@@ -751,7 +751,7 @@ table.fin td.pay{font-weight:700;font-size:19px;white-space:nowrap}
     },
     {
       "id": "o-soak",
-      "title": "Soak Up Savings",
+      "title": "Fall Into Savings",
       "subtitle": "Valid for 30 days",
       "totalLabel": "Project Total",
       "financingButtonTitle": "Financing Options",
@@ -1039,7 +1039,7 @@ function computeOffer(offer) {
     var d = findDiscount(did);
     if (!d) return;
     /* A Costco member gets the shop card instead of this one promotion
-       (Soak Up Savings, by default), wherever it would otherwise apply,
+       (Fall Into Savings, by default), wherever it would otherwise apply,
        so it never stacks with it. */
     if (costcoActive && CONFIG.costco.replacesDiscountId && d.id === CONFIG.costco.replacesDiscountId) return;
     if (d.repToggleable && !S.toggles[d.id]) return;
@@ -2528,7 +2528,7 @@ function paneCostco(pane) {
   card.appendChild(g);
   card.appendChild(el("div", "hint",
     "Most Costco members should not also get a promotion Costco already priced in for them. Pick the discount " +
-    "the shop card stands in for (Soak Up Savings, by default): wherever that discount would normally apply, " +
+    "the shop card stands in for (Fall Into Savings, by default): wherever that discount would normally apply, " +
     "toggling a customer as a Costco member skips it instead, on every offer that uses it."));
 
   card.appendChild(el("div", "hint",
