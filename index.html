@@ -1007,15 +1007,6 @@ function baseTotal() {
   return t;
 }
 
-/* The non-Jacuzzi amount (a glass door, say) is a reference number only.
-   It is already included in the price the rep typed into a price input
-   above, so it is never added again here; it exists purely to tell the
-   Costco math how much of that price to leave out, since Costco and
-   Jacuzzi's partnership does not extend to that spend. */
-function costcoEligibleBaseTotal() {
-  return Math.max(baseTotal() - Number(S.nonJacuzziAmount || 0), 0);
-}
-
 function discountAmount(d, running) {
   var basis = d.target === "TOTAL" ? running : Number(S.inputs[d.target] || 0);
   var val = d.repAdjustable ? Number(S.marketing || 0) : Number(d.value || 0);
@@ -1026,11 +1017,6 @@ function discountAmount(d, running) {
 function computeOffer(offer) {
   var base = baseTotal();
   var running = base;
-  /* Tracked in parallel, dollar for dollar: every discount (whichever price
-     input it targets) is assumed to land on Jacuzzi and non-Jacuzzi spend
-     in the same ratio the project starts in, so the ratio holds all the
-     way through to where the Costco Shop Card itself is figured. */
-  var costcoRunning = costcoEligibleBaseTotal();
   var lines = [];
 
   var costcoActive = !!(S.costco && CONFIG.costco && CONFIG.costco.enabled);
@@ -1046,11 +1032,7 @@ function computeOffer(offer) {
     if (!d.repToggleable && d.defaultOn === false && !S.toggles[d.id]) return;
 
     var amt = discountAmount(d, running);
-    var delta = (d.method === "ADD" ? amt : -amt);
-    var share = running !== 0 ? (costcoRunning / running) : 0;
-    costcoRunning += delta * share;
-
-    running += delta;
+    running += (d.method === "ADD" ? amt : -amt);
     lines.push({ name: d.name, amount: amt, method: d.method });
   });
 
@@ -1058,9 +1040,18 @@ function computeOffer(offer) {
      last (after every other discount) and folds straight into the same
      total, financed amount and payment as the rest of the stack. Turning
      the Costco toggle off drops the line and the total goes back to
-     normal, which is the rep's way to leave it off a presentation. */
+     normal, which is the rep's way to leave it off a presentation.
+
+     The non-Jacuzzi amount is a fixed dollar figure, not a share of the
+     price: it is not a Jacuzzi product, so none of Bathworks' own
+     discounts above are assumed to touch it, and it is subtracted as-is
+     from wherever the running total landed rather than shrinking along
+     with everything else. Verified against a real contract where the
+     door price is carried through unchanged after Military and
+     Scheduling Rewards both applied. */
   if (costcoActive && offer.costcoEligible) {
-    var cardAmt = costcoShopCard(costcoRunning);
+    var costcoEligible = Math.max(running - Number(S.nonJacuzziAmount || 0), 0);
+    var cardAmt = costcoShopCard(costcoEligible);
     if (cardAmt > 0) {
       running -= cardAmt;
       lines.push({ name: (CONFIG.costco && CONFIG.costco.lineLabel) || "Costco Shop Card", amount: cardAmt, method: "SUBTRACT" });
