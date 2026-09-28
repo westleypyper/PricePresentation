@@ -1070,7 +1070,23 @@ function computeOffer(offer) {
   // Optional cap on cumulative discount
   if (CONFIG.limits.maxTotalDiscountEnabled && base > 0) {
     var floor = base * (1 - Number(CONFIG.limits.maxTotalDiscountPercent || 0) / 100);
-    if (running < floor) running = floor;
+    if (running < floor) {
+      /* Clamping `running` alone would leave the listed lines (Military,
+         Scheduling Rewards, the Costco Shop Card, whatever else stacked)
+         summing to more discount than the cap actually allows, so a rep's
+         screen would show line items that do not add up to the total.
+         Scale every SUBTRACT line down by the same factor so they always
+         foot exactly; ADD lines (a gift, a surcharge) are not a discount
+         and are left alone. */
+      var totalAdded = 0, totalSubtracted = 0;
+      lines.forEach(function (l) {
+        if (l.method === "ADD") totalAdded += l.amount; else totalSubtracted += l.amount;
+      });
+      var neededSubtracted = base + totalAdded - floor;
+      var scale = totalSubtracted > 0 ? neededSubtracted / totalSubtracted : 0;
+      lines.forEach(function (l) { if (l.method !== "ADD") l.amount *= scale; });
+      running = floor;
+    }
   }
   if (running < 0) running = 0;
 
