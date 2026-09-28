@@ -214,6 +214,9 @@ input,select{font-family:inherit;font-size:16px;color:var(--navy-800)}
 .costco .k{font-size:14px;font-weight:600;color:var(--slate-600)}
 .costco .v{font-size:24px;font-weight:700;color:var(--navy-800);letter-spacing:-.01em;margin-top:2px}
 .costco .note{font-size:12px;font-weight:500;color:var(--slate-600);margin-top:6px;line-height:1.4}
+.costco .final{margin-top:10px;padding-top:10px;border-top:1px solid var(--border-strong);display:flex;justify-content:space-between;align-items:baseline;gap:14px}
+.costco .final .k{font-size:14px;font-weight:700;color:var(--slate-600);margin-top:0}
+.costco .final .v{font-size:22px;font-weight:700;color:var(--credit);margin-top:0;white-space:nowrap}
 
 .offer .foot{margin-top:auto;display:flex;flex-direction:column;gap:11px}
 .btn-fin{
@@ -474,10 +477,12 @@ table.fin td.pay{font-weight:700;font-size:19px;white-space:nowrap}
     "enabled": true,
     "toggleLabel": "Costco Member",
     "lineLabel": "Costco Shop Card",
+    "finalTotalLabel": "Final Project Total",
     "noteText": "Digital Costco Shop Card(s) will be processed and emailed within 7 business days of Costco's receipt of your signature on the project Delivery Verification form.",
     "shopCardPercent": 10,
     "materialsPercent": 80,
-    "taxRatePercent": 6
+    "taxRatePercent": 6,
+    "replacesDiscountId": "d-soak"
   },
   "session": {
     "rememberDuringSit": true,
@@ -1050,9 +1055,15 @@ function computeOffer(offer) {
   var costcoRunning = costcoEligibleBaseTotal();
   var lines = [];
 
+  var costcoActive = !!(S.costco && CONFIG.costco && CONFIG.costco.enabled);
+
   offer.discounts.forEach(function (did) {
     var d = findDiscount(did);
     if (!d) return;
+    /* A Costco member gets the shop card instead of this one promotion
+       (Soak Up Savings, by default), wherever it would otherwise apply,
+       so it never stacks with it. */
+    if (costcoActive && CONFIG.costco.replacesDiscountId && d.id === CONFIG.costco.replacesDiscountId) return;
     if (d.repToggleable && !S.toggles[d.id]) return;
     if (!d.repToggleable && d.defaultOn === false && !S.toggles[d.id]) return;
 
@@ -1511,6 +1522,13 @@ function renderOffer(offer) {
       cbox.appendChild(el("div", "k", esc((CONFIG.costco && CONFIG.costco.lineLabel) || "Costco Shop Card")));
       cbox.appendChild(el("div", "v", money(ccAmount)));
       if (CONFIG.costco && CONFIG.costco.noteText) cbox.appendChild(el("div", "note", esc(CONFIG.costco.noteText)));
+      /* The shop card is not a price cut on the contract itself, but the
+         homeowner still nets it against their cost, so it earns its own
+         "what this really comes to" line under the incentive amount. */
+      var frow = el("div", "final");
+      frow.appendChild(el("div", "k", esc((CONFIG.costco && CONFIG.costco.finalTotalLabel) || "Final Project Total")));
+      frow.appendChild(el("div", "v", money(Math.max(r.total - ccAmount, 0))));
+      cbox.appendChild(frow);
       bp.appendChild(cbox);
     }
   }
@@ -1717,6 +1735,24 @@ function renderDrawer() {
   g0.appendChild(pbtn);
   box.appendChild(g0);
 
+  /* Costco Shop Card. Not a discount, so it lives outside CONFIG.discounts.
+     Placed first, ahead of every discount toggle, because it changes which
+     promotion applies (see below) rather than stacking with one, and most
+     homeowners are not Costco members, so a rep needs to see and decide
+     this before touching anything else. */
+  if (CONFIG.costco && CONFIG.costco.enabled && CONFIG.offers.some(function (o) { return o.costcoEligible; })) {
+    var replaced = findDiscount(CONFIG.costco.replacesDiscountId);
+    var gC = el("div", "grp");
+    gC.appendChild(el("div", "lbl", "Costco"));
+    gC.appendChild(toggleRow(
+      CONFIG.costco.toggleLabel || "Costco Member",
+      replaced ? ("Shop Card replaces " + replaced.name + " on eligible offers") : "Adds the Costco Shop Card line to eligible offers",
+      S.costco,
+      function (on) { S.costco = on; renderStage(); }
+    ));
+    box.appendChild(gC);
+  }
+
   // Global qualifier toggles
   /* A toggle that no offer uses cannot change a price, and a rep flipping
      one would reasonably think it had. Only list discounts attached to at
@@ -1731,21 +1767,6 @@ function renderDrawer() {
     g1.appendChild(el("div", "lbl", "Qualifier discounts"));
     globals.forEach(function (d) { g1.appendChild(toggleRow(d.name, discountSub(d), S.toggles[d.id], function (on) { S.toggles[d.id] = on; renderStage(); })); });
     box.appendChild(g1);
-  }
-
-  // Costco Shop Card. Not a discount, so it lives outside CONFIG.discounts:
-  // it never changes the price total, only whether the incentive line shows
-  // on the offers marked Costco-eligible below.
-  if (CONFIG.costco && CONFIG.costco.enabled && CONFIG.offers.some(function (o) { return o.costcoEligible; })) {
-    var gC = el("div", "grp");
-    gC.appendChild(el("div", "lbl", "Costco"));
-    gC.appendChild(toggleRow(
-      CONFIG.costco.toggleLabel || "Costco Member",
-      "Adds the Costco Shop Card line to eligible offers",
-      S.costco,
-      function (on) { S.costco = on; renderStage(); }
-    ));
-    box.appendChild(gC);
   }
 
   // Offer reveal
@@ -2503,7 +2524,8 @@ function paneCostco(pane) {
   if (!DRAFT.costco) {
     DRAFT.costco = {
       enabled: true, toggleLabel: "Costco Member", lineLabel: "Costco Shop Card",
-      noteText: "", shopCardPercent: 10, materialsPercent: 80, taxRatePercent: 6
+      finalTotalLabel: "Final Project Total", noteText: "",
+      shopCardPercent: 10, materialsPercent: 80, taxRatePercent: 6, replacesDiscountId: ""
     };
   }
   var c = DRAFT.costco;
@@ -2513,10 +2535,19 @@ function paneCostco(pane) {
   g.appendChild(editRow("Enabled", c.enabled ? "1" : "0", function (v) { c.enabled = v === "1"; }, "select", [["1", "Yes"], ["0", "No"]]));
   g.appendChild(editRow("Rep toggle label", c.toggleLabel, function (v) { c.toggleLabel = v; }));
   g.appendChild(editRow("Line label on the price card", c.lineLabel, function (v) { c.lineLabel = v; }));
+  g.appendChild(editRow("Final total label", c.finalTotalLabel, function (v) { c.finalTotalLabel = v; }));
   g.appendChild(editRow("Shop card %", c.shopCardPercent, function (v) { c.shopCardPercent = v; }, "number"));
   g.appendChild(editRow("Materials share of price %", c.materialsPercent, function (v) { c.materialsPercent = v; }, "number"));
   g.appendChild(editRow("Sales tax rate %", c.taxRatePercent, function (v) { c.taxRatePercent = v; }, "number"));
+  var replaceOptions = [["", "Nothing, just add the shop card"]].concat(
+    DRAFT.discounts.map(function (d) { return [d.id, d.name]; })
+  );
+  g.appendChild(editRow("Toggling membership on replaces", c.replacesDiscountId || "", function (v) { c.replacesDiscountId = v; }, "select", replaceOptions));
   card.appendChild(g);
+  card.appendChild(el("div", "hint",
+    "Most Costco members should not also get a promotion Costco already priced in for them. Pick the discount " +
+    "the shop card stands in for (Soak Up Savings, by default): wherever that discount would normally apply, " +
+    "toggling a customer as a Costco member skips it instead, on every offer that uses it."));
 
   var note = el("div");
   note.style.marginTop = "10px";
@@ -2534,9 +2565,11 @@ function paneCostco(pane) {
     "Costco math runs last, after every other discount, against whichever total an offer already landed on. " +
     "Labor is the labor share of that total, untaxed; materials is the rest of the total, with its own tax " +
     "already included. Michigan taxes materials but not labor, so the calculator knocks the tax back out of " +
-    "the materials share before taking the shop card percentage of the two shares combined. " +
+    "the materials share before taking the shop card percentage of the two shares combined. The final total " +
+    "line nets the shop card against the price so a homeowner can see what it comes to, even though the shop " +
+    "card itself is a separate Costco payout, not a change to the signed contract price. " +
     "Turn an offer on or off for this in the Offers tab, under “Costco Shop Card eligible.” " +
-    "The rep switches it on per customer from the Pricing panel during the sit."));
+    "The rep switches it on per customer from the top of the Pricing panel during the sit."));
   pane.appendChild(card);
 }
 
