@@ -1566,32 +1566,16 @@ function openFinancing(offer) {
 
   var F = CONFIG.financing;
 
-  /* Two plans can carry the same customer-facing name — three of the term
-     plans are all called "Payment as low as". With the term and rate hidden
-     those rows would be indistinguishable, so only the best payment under a
-     given name is listed. Give plans distinct public names to list them all. */
-  var rows = [];
-  var byName = {};
-  offer.plans.forEach(function (pid) {
+  /* Every checked plan gets its own row, even when two share the exact same
+     customer-facing name (three of the term plans are all "Payment as low
+     as" with the term itself never shown). Which one to feature is entirely
+     the rep's call, made by tapping the row during the sit, so a plan that
+     was deliberately checked off in Administrator is never hidden here. */
+  var rows = offer.plans.map(function (pid) {
     var p = findPlan(pid);
-    if (!p) return;
-    var pay = payment(p, r);
-    var name = publicName(p);
-    var entry = { plan: p, pay: pay, name: name };
-    var collapse = !F.showTerm && !F.showRate;
-    if (collapse && byName[name]) {
-      var prev = byName[name];
-      var selId = S.plan[offer.id];
-      if (prev.plan.id === selId) return;                        // already the one on the card
-      if (p.id === selId) { prev.plan = p; prev.pay = pay; return; }
-      var a = (pay.kind === "amount") ? pay.value : null;
-      var b = (prev.pay.kind === "amount") ? prev.pay.value : null;
-      if (a !== null && b !== null && a < b) { prev.plan = p; prev.pay = pay; }
-      return;
-    }
-    byName[name] = entry;
-    rows.push(entry);
-  });
+    if (!p) return null;
+    return { plan: p, pay: payment(p, r), name: publicName(p) };
+  }).filter(Boolean);
 
   var t = el("table", "fin");
   var head = "<tr><th>Plan</th>";
