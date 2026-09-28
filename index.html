@@ -503,22 +503,26 @@ table.fin td.pay{font-weight:700;font-size:19px;white-space:nowrap}
     {
       "id": "priceInput0",
       "label": "Project 1",
-      "enabled": true
+      "enabled": true,
+      "costcoEligible": true
     },
     {
       "id": "priceInput1",
       "label": "Project 2",
-      "enabled": true
+      "enabled": true,
+      "costcoEligible": true
     },
     {
       "id": "priceInput2",
       "label": "Project 3",
-      "enabled": false
+      "enabled": false,
+      "costcoEligible": true
     },
     {
       "id": "priceInput3",
       "label": "Project 4",
-      "enabled": false
+      "enabled": false,
+      "costcoEligible": true
     }
   ],
   "discounts": [
@@ -1011,6 +1015,22 @@ function baseTotal() {
   return t;
 }
 
+/* Some price inputs are not Jacuzzi product (a non-Jacuzzi glass door, for
+   instance) and Costco's shop card cannot be figured on them, since Costco
+   and Jacuzzi's partnership does not extend to that spend. */
+function costcoEligibleBaseTotal() {
+  var t = 0;
+  CONFIG.priceInputs.forEach(function (pi) {
+    if (pi.enabled && pi.costcoEligible !== false) t += Number(S.inputs[pi.id] || 0);
+  });
+  return t;
+}
+
+function priceInputFor(id) {
+  for (var i = 0; i < CONFIG.priceInputs.length; i++) if (CONFIG.priceInputs[i].id === id) return CONFIG.priceInputs[i];
+  return null;
+}
+
 function discountAmount(d, running) {
   var basis = d.target === "TOTAL" ? running : Number(S.inputs[d.target] || 0);
   var val = d.repAdjustable ? Number(S.marketing || 0) : Number(d.value || 0);
@@ -1021,6 +1041,13 @@ function discountAmount(d, running) {
 function computeOffer(offer) {
   var base = baseTotal();
   var running = base;
+  /* Tracked in parallel, dollar for dollar, so a non-Jacuzzi item (a glass
+     door Costco and Jacuzzi's partnership does not cover) neither soaks up
+     discount meant for it nor donates discount to the Jacuzzi materials.
+     A TOTAL discount is split across the two in whatever ratio currently
+     holds; a discount aimed at one specific price input passes straight
+     through to costcoRunning only when that input is itself eligible. */
+  var costcoRunning = costcoEligibleBaseTotal();
   var lines = [];
 
   offer.discounts.forEach(function (did) {
@@ -1030,22 +1057,39 @@ function computeOffer(offer) {
     if (!d.repToggleable && d.defaultOn === false && !S.toggles[d.id]) return;
 
     var amt = discountAmount(d, running);
-    running += (d.method === "ADD" ? amt : -amt);
+    var delta = (d.method === "ADD" ? amt : -amt);
+
+    if (d.target === "TOTAL") {
+      var share = running !== 0 ? (costcoRunning / running) : 0;
+      costcoRunning += delta * share;
+    } else {
+      var pi = priceInputFor(d.target);
+      if (pi && pi.enabled && pi.costcoEligible !== false) costcoRunning += delta;
+    }
+
+    running += delta;
     lines.push({ name: d.name, amount: amt, method: d.method });
   });
 
   // Optional cap on cumulative discount
   if (CONFIG.limits.maxTotalDiscountEnabled && base > 0) {
     var floor = base * (1 - Number(CONFIG.limits.maxTotalDiscountPercent || 0) / 100);
-    if (running < floor) running = floor;
+    if (running < floor) {
+      var scale = running !== 0 ? floor / running : 0;
+      costcoRunning *= scale;
+      running = floor;
+    }
   }
   if (running < 0) running = 0;
+  if (costcoRunning < 0) costcoRunning = 0;
+  if (costcoRunning > running) costcoRunning = running; // guards float drift, never more eligible than total
 
   var deposit = Math.min(Number(S.deposit || 0), running);
   return {
     base: base,
     lines: lines,
     total: running,
+    costcoTotal: costcoRunning,
     saved: base - running,
     deposit: deposit,
     financed: Math.max(running - deposit, 0)
@@ -1461,7 +1505,7 @@ function renderOffer(offer) {
   bp.appendChild(tot);
 
   if (offer.costcoEligible && S.costco) {
-    var ccAmount = costcoShopCard(r.total);
+    var ccAmount = costcoShopCard(r.costcoTotal);
     if (ccAmount > 0) {
       var cbox = el("div", "costco");
       cbox.appendChild(el("div", "k", esc((CONFIG.costco && CONFIG.costco.lineLabel) || "Costco Shop Card")));
@@ -2001,8 +2045,13 @@ function paneGeneral(pane) {
     var r = el("div", "egrid");
     r.appendChild(editRow("Label", pi.label, function (v) { pi.label = v; }));
     r.appendChild(editRow("Enabled", pi.enabled ? "1" : "0", function (v) { pi.enabled = v === "1"; }, "select", [["1", "Yes"], ["0", "No"]]));
+    r.appendChild(editRow("Costco Shop Card eligible", pi.costcoEligible === false ? "0" : "1", function (v) { pi.costcoEligible = v === "1"; }, "select", [["1", "Yes"], ["0", "No, e.g. a non-Jacuzzi item"]]));
     pcard.appendChild(r);
   });
+  pcard.appendChild(el("div", "hint",
+    "Mark a box “No” for anything that is not Jacuzzi product, such as a non-Jacuzzi glass door. " +
+    "Costco and Jacuzzi's partnership does not cover that spend, so it is left out of the Costco Shop Card math " +
+    "while still counting toward the project total and every other discount."));
   pane.appendChild(pcard);
 
   var lcard = el("div", "editcard");
